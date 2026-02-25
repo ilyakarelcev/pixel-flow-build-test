@@ -8,35 +8,81 @@
   <link rel="shortcut icon" href="TemplateData/favicon.ico">
   <link rel="stylesheet" href="TemplateData/style.css">
 
-  <!-- ДОБАВЛЕНИЯ ДЛЯ DEV TOOLS -->
   <style>
-    #dev-tools {
-      background: #333;
-      padding: 10px;
-      color: white;
+    body {
+      padding: 0;
+      margin: 0;
+      overflow: hidden;
+      background-color: #222;
       display: flex;
-      gap: 10px;
-      align-items: center;
-      border-bottom: 2px solid #555;
+      flex-direction: row;
+      /* Горизонтальное расположение */
+      height: 100vh;
+      width: 100vw;
       font-family: sans-serif;
     }
 
+    /* КОНТЕЙНЕР ДЛЯ ИГРЫ (70%) */
+    #unity-container {
+      width: 70%;
+      height: 100%;
+      position: relative;
+      /* Для нормальной работы дефолтных стилей Unity */
+    }
+
+    /* ЧТОБЫ CANVAS РАСТЯГИВАЛСЯ ВНУТРИ СВОИХ 80% */
+    #unity-canvas {
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    /* ПРАВАЯ КОЛОНКА С JSON (30%) */
+    #dev-tools {
+      width: 30%;
+      background: #333;
+      padding: 15px;
+      box-sizing: border-box;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      /* Элементы друг под другом */
+      gap: 15px;
+      border-left: 2px solid #555;
+    }
+
+    #dev-tools span {
+      font-weight: bold;
+      font-size: 16px;
+    }
+
+    /* ПОЛЕ ДЛЯ ВВОДА (многострочное, с прокруткой) */
     #json-input {
       flex-grow: 1;
-      padding: 8px;
+      /* Занимает всё доступное место по высоте */
+      padding: 10px;
       font-family: monospace;
+      font-size: 12px;
       border-radius: 4px;
       border: none;
+      resize: none;
+      /* Запрещаем ручное растягивание */
+      background: #1e1e1e;
+      color: #d4d4d4;
+      white-space: pre-wrap;
+      /* Перенос длинных строк JSON */
+      overflow-y: auto;
+      /* Вертикальная прокрутка */
     }
 
     #load-btn {
-      padding: 8px 16px;
+      padding: 12px 16px;
       background: #4CAF50;
       border: none;
       color: white;
       border-radius: 4px;
       cursor: pointer;
       font-weight: bold;
+      font-size: 14px;
     }
 
     #load-btn:hover {
@@ -46,14 +92,7 @@
 </head>
 
 <body>
-  <!-- НАШ ВНЕШНИЙ ИНТЕРФЕЙС -->
-  <div id="dev-tools">
-    <span>Level JSON:</span>
-    <input type="text" id="json-input" placeholder="Paste your level JSON here... (Ctrl+V)" />
-    <button id="load-btn" onclick="sendJsonToUnity()">Load & Restart</button>
-  </div>
-
-  <!-- ДЕФОЛТНЫЙ CANVAS ЮНИТИ -->
+  <!-- ДЕФОЛТНЫЙ CANVAS ЮНИТИ (СЛЕВА) -->
   <div id="unity-container" class="unity-desktop">
     <canvas id="unity-canvas" width=960 height=600 tabindex="-1"></canvas>
     <div id="unity-loading-bar">
@@ -68,6 +107,13 @@
       <div id="unity-fullscreen-button"></div>
       <div id="unity-build-title">pixel-flow</div>
     </div>
+  </div>
+
+  <!-- НАШ ВНЕШНИЙ ИНТЕРФЕЙС (СПРАВА) -->
+  <div id="dev-tools">
+    <span>Level JSON:</span>
+    <textarea id="json-input" placeholder="Paste your level JSON here... (Ctrl+V)"></textarea>
+    <button id="load-btn" onclick="sendJsonToUnity()">Load & Restart</button>
   </div>
 
   <script>
@@ -135,6 +181,21 @@
           unityInstance.SetFullscreen(1);
         };
 
+        // Загружаем дефолтный уровень из файла level.json
+        fetch("level.json")
+          .then(response => {
+            if (response.ok) return response.text();
+            throw new Error("level.json not found");
+          })
+          .then(text => {
+            if (text && text.trim() !== "") {
+              document.getElementById("json-input").value = text;
+              // Сразу отправляем в Unity при старте
+              unityInstance.SendMessage("Loader", "ReceiveJSONFromBrowser", text);
+            }
+          })
+          .catch(err => console.log("Default level not loaded:", err));
+
       }).catch((message) => {
         alert(message);
       });
@@ -158,6 +219,12 @@
         alert("Wait! Unity is still loading...");
       }
     }
+
+    // Отключаем перехват нажатий клавиш Unity, когда мы печатаем в наше текстовое поле
+    var jsonInput = document.getElementById("json-input");
+    jsonInput.addEventListener("keydown", function (e) { e.stopPropagation(); });
+    jsonInput.addEventListener("keyup", function (e) { e.stopPropagation(); });
+    jsonInput.addEventListener("keypress", function (e) { e.stopPropagation(); });
   </script>
 </body>
 
