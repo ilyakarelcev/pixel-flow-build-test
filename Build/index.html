@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Unity WebGL Player | pixel-flow</title>
+    <style>
+      body {
+        padding: 0;
+        margin: 0;
+        overflow: hidden;
+        background-color: #222;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        font-family: sans-serif;
+      }
+      #dev-tools {
+        background: #333;
+        padding: 10px;
+        color: white;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        border-bottom: 2px solid #555;
+      }
+      #json-input {
+        flex-grow: 1;
+        padding: 8px;
+        font-family: monospace;
+        border-radius: 4px;
+        border: none;
+      }
+      #load-btn {
+        padding: 8px 16px;
+        background: #4CAF50;
+        border: none;
+        color: white;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+      }
+      #load-btn:hover {
+        background: #45a049;
+      }
+      #unity-container {
+        flex-grow: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      canvas {
+        max-width: 100%;
+        max-height: 100%;
+        width: 960px;
+        height: 600px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- НАШ ВНЕШНИЙ ИНТЕРФЕЙС -->
+    <div id="dev-tools">
+      <span>Level JSON:</span>
+      <input type="text" id="json-input" placeholder="Paste your level JSON here... (Ctrl+V)" />
+      <button id="load-btn" onclick="sendJsonToUnity()">Load & Restart</button>
+    </div>
+
+    <!-- CANVAS ЮНИТИ -->
+    <div id="unity-container">
+      <canvas id="unity-canvas" width="960" height="600" tabindex="-1"></canvas>
+    </div>
+
+    <!-- КОД ИНИЦИАЛИЗАЦИИ ЮНИТИ (Базовый шаблон Unity 2020+) -->
+    <script>
+      var unityInstance = null;
+      var buildUrl = "Build";
+      var loaderUrl = buildUrl + "/Build.loader.js";
+      var config = {
+        dataUrl: buildUrl + "/Build.data.br",
+        frameworkUrl: buildUrl + "/Build.framework.js.br",
+        codeUrl: buildUrl + "/Build.wasm.br",
+        streamingAssetsUrl: "StreamingAssets",
+        companyName: "DefaultCompany",
+        productName: "pixel-flow",
+        productVersion: "0.1.0",
+      };
+
+      var script = document.createElement("script");
+      script.src = loaderUrl;
+      script.onload = () => {
+        createUnityInstance(document.querySelector("#unity-canvas"), config, (progress) => {
+          // тут можно добавить прогресс бар
+        }).then((instance) => {
+          unityInstance = instance;
+        }).catch((message) => {
+          alert(message);
+        });
+      };
+      document.body.appendChild(script);
+
+      // НАША ФУНКЦИЯ ДЛЯ ВЫЗОВА Unity
+      function sendJsonToUnity() {
+        if (unityInstance !== null) {
+          var inputElement = document.getElementById("json-input");
+          var jsonString = inputElement.value;
+          
+          if (!jsonString) {
+              alert("Please paste some JSON first!");
+              return;
+          }
+
+          // Вызов SendMessage('Имя Объекта в иерархии', 'Название метода', 'параметр')
+          unityInstance.SendMessage("Loader", "ReceiveJSONFromBrowser", jsonString);
+        } else {
+          alert("Wait! Unity is still loading...");
+        }
+      }
+    </script>
+  </body>
+</html>
