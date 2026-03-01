@@ -51,6 +51,7 @@ header h1 {
 
 header h1 span {
     background: var(--accent-gradient);
+    background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
@@ -128,6 +129,7 @@ header p {
 }
 
 input[type="range"] {
+    appearance: none;
     -webkit-appearance: none;
     width: 100%;
     height: 6px;
@@ -137,6 +139,7 @@ input[type="range"] {
 }
 
 input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
     -webkit-appearance: none;
     width: 18px;
     height: 18px;
@@ -170,7 +173,98 @@ input[type="range"]::-webkit-slider-thumb:hover {
 .canvas-container {
     display: flex;
     gap: 1.5rem;
+    transition: all 0.3s ease;
 }
+
+.preview-area.zoom-mode .canvas-container {
+    flex-direction: column;
+}
+
+.preview-area.zoom-mode .canvas-wrapper {
+    align-items: center;
+}
+
+.preview-area.zoom-mode canvas {
+    max-width: 100%;
+    width: 100%;
+    /* Scale up to fill the 100% width of the vertical container */
+    height: auto;
+}
+
+.projects-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1.5rem;
+}
+
+.project-card {
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    border-radius: 0.8rem;
+    padding: 0.8rem;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.project-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-4px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+}
+
+.project-thumb {
+    width: 100%;
+    aspect-ratio: 1;
+    background: #000;
+    border-radius: 0.4rem;
+    background-size: cover;
+    background-position: center;
+    image-rendering: pixelated;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.project-info {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+.project-actions {
+    display: flex;
+    gap: 0.4rem;
+}
+
+.project-btn {
+    padding: 0.4rem;
+    border-radius: 0.4rem;
+    border: none;
+    cursor: pointer;
+    flex: 1;
+    font-size: 0.75rem;
+    font-weight: 500;
+    transition: opacity 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.project-btn.load {
+    background: var(--accent-gradient);
+    color: white;
+}
+
+.project-btn.delete {
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.project-btn:hover {
+    opacity: 0.9;
+}
+
 
 @media (max-width: 900px) {
     .canvas-container {

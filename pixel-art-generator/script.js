@@ -26,6 +26,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const resEmpty = document.getElementById('result-empty');
     const paletteContainer = document.getElementById('palette-container');
     const markersContainer = document.getElementById('markers-container');
+    const generateJsonBtn = document.getElementById('generate-json-btn');
+    const copyJsonBtn = document.getElementById('copy-json-btn');
+    const jsonDisplay = document.getElementById('json-display');
+    const jsonOutputContainer = document.getElementById('json-output-container');
+    const saveProjectBtn = document.getElementById('save-project-btn');
+    const clearProjectBtn = document.getElementById('clear-project-btn');
+    const zoomBtn = document.getElementById('zoom-btn');
+    const previewArea = document.querySelector('.preview-area');
+    const projectsList = document.getElementById('projects-list');
+    const projectsTotal = document.getElementById('projects-total');
 
     const ctxOrig = origCanvas.getContext('2d');
     const ctxRes = resCanvas.getContext('2d');
@@ -34,6 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const ctxClean = cleanCanvas.getContext('2d', { willReadFrequently: true });
 
     let loadedImage = null;
+    let lastImageDataURL = null;
     let timeoutId = null;
 
     // State variables
@@ -55,50 +66,76 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function loadImageFromFile(file) {
         if (!file || !file.type.startsWith('image/')) return;
-
         const reader = new FileReader();
         reader.onload = (event) => {
-            const img = new Image();
-            img.onload = () => {
-                loadedImage = img;
-                origCanvas.style.display = 'block';
-                resCanvas.style.display = 'block';
-                origEmpty.style.display = 'none';
-                resEmpty.style.display = 'none';
+            initImage(event.target.result);
+        };
+        reader.readAsDataURL(file);
+    }
 
-                // Calculate size based on maxDimension
-                const maxDimension = 800;
-                let width = loadedImage.width;
-                let height = loadedImage.height;
+    function initImage(src, savedData = null) {
+        const img = new Image();
+        img.onload = () => {
+            loadedImage = img;
+            lastImageDataURL = src;
+            origCanvas.style.display = 'block';
+            resCanvas.style.display = 'block';
+            origEmpty.style.display = 'none';
+            resEmpty.style.display = 'none';
 
-                if (width > maxDimension || height > maxDimension) {
-                    const ratio = Math.min(maxDimension / width, maxDimension / height);
-                    width = Math.floor(width * ratio);
-                    height = Math.floor(height * ratio);
-                }
+            const maxDimension = 800;
+            let width = loadedImage.width;
+            let height = loadedImage.height;
 
-                processingWidth = width;
-                processingHeight = height;
+            if (width > maxDimension || height > maxDimension) {
+                const ratio = Math.min(maxDimension / width, maxDimension / height);
+                width = Math.floor(width * ratio);
+                height = Math.floor(height * ratio);
+            }
 
-                origCanvas.width = width;
-                origCanvas.height = height;
-                resCanvas.width = width;
-                resCanvas.height = height;
+            processingWidth = width;
+            processingHeight = height;
+            origCanvas.width = width;
+            origCanvas.height = height;
+            resCanvas.width = width;
+            resCanvas.height = height;
+            markersContainer.style.display = 'block';
 
-                markersContainer.style.display = 'block';
+            updateCleanCanvas();
 
-                updateCleanCanvas();
-
-                // Add 1 default point in the center
+            if (savedData) {
+                // Restore settings
+                samplePoints = savedData.samplePoints;
+                nextMarkerId = Math.max(...samplePoints.map(p => p.id), -1) + 1;
+                gridSizeInput.value = savedData.gridSize;
+                gridSizeVal.textContent = savedData.gridSize + 'px';
+                blurAmountInput.value = savedData.blurAmount;
+                blurAmountVal.textContent = savedData.blurAmount + 'px';
+                offsetXInput.value = savedData.offsetX;
+                offsetXVal.textContent = savedData.offsetX + 'px';
+                offsetYInput.value = savedData.offsetY;
+                offsetYVal.textContent = savedData.offsetY + 'px';
+                distanceMetricInput.value = savedData.distanceMetric;
+                sampleMethodInput.value = savedData.sampleMethod;
+                gridColorInput.value = savedData.gridColor;
+                gridColorPreview.style.backgroundColor = savedData.gridColor;
+                gridAlphaInput.value = savedData.gridAlpha;
+                gridAlphaVal.textContent = parseFloat(savedData.gridAlpha).toFixed(2);
+                gridVisibleInput.checked = savedData.gridVisible;
+                currentSortIndex = savedData.currentSortIndex || 0;
+                sortPaletteBtn.textContent = sortNames[currentSortIndex];
+            } else {
                 samplePoints = [];
                 nextMarkerId = 0;
                 addSamplePoint(Math.floor(width / 2), Math.floor(height / 2));
+            }
 
-                debounceProcess(true);
-            };
-            img.src = event.target.result;
+            currentPalette = samplePoints.map(p => [p.r, p.g, p.b]);
+            renderMarkers();
+            updatePaletteUI();
+            debounceProcess(true);
         };
-        reader.readAsDataURL(file);
+        img.src = src;
     }
 
     uploadInput.addEventListener('change', (e) => {
@@ -110,7 +147,9 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let i = 0; i < items.length; i++) {
             if (items[i].type.indexOf('image') !== -1) {
                 const file = items[i].getAsFile();
-                loadImageFromFile(file);
+                const reader = new FileReader();
+                reader.onload = (event) => initImage(event.target.result);
+                reader.readAsDataURL(file);
                 break;
             }
         }
@@ -206,6 +245,58 @@ document.addEventListener('DOMContentLoaded', () => {
         a.click();
     });
 
+    generateJsonBtn.addEventListener('click', () => {
+        if (!loadedImage || blockColors.length === 0) return;
+
+        const resW = parseInt(gridSizeInput.value);
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        blockColors.forEach(bc => {
+            if (bc.bx < minX) minX = bc.bx;
+            if (bc.by < minY) minY = bc.by;
+            if (bc.bx > maxX) maxX = bc.bx;
+            if (bc.by > maxY) maxY = bc.by;
+        });
+
+        const w = maxX - minX + 1;
+        const h = maxY - minY + 1;
+        if (w <= 0 || h <= 0) return;
+
+        const colors = currentPalette.map(c => ({ r: c[0], g: c[1], b: c[2], a: 255 }));
+
+        const blocks = blockColors.map(bc => {
+            const finalColor = findClosestPaletteColor(bc.r, bc.g, bc.b);
+            const colIndex = currentPalette.findIndex(c => c[0] === finalColor[0] && c[1] === finalColor[1] && c[2] === finalColor[2]);
+            return {
+                Pos: { x: bc.bx - minX, y: maxY - bc.by },
+                Size: { x: 1, y: 1 },
+                Col: colIndex,
+                HP: 1
+            };
+        });
+
+        const json = {
+            GridSize: { x: w, y: h },
+            Colors: colors,
+            Blocks: blocks
+        };
+
+        const jsonStr = JSON.stringify(json, null, 2);
+        jsonDisplay.textContent = jsonStr;
+        jsonOutputContainer.style.display = 'block';
+        copyJsonBtn.style.display = 'block';
+        copyJsonBtn.textContent = 'Копировать';
+    });
+
+    copyJsonBtn.addEventListener('click', () => {
+        const text = jsonDisplay.textContent;
+        navigator.clipboard.writeText(text).then(() => {
+            copyJsonBtn.textContent = 'Скопировано!';
+            setTimeout(() => {
+                copyJsonBtn.textContent = 'Копировать';
+            }, 2000);
+        });
+    });
+
     const gridColorTrigger = document.getElementById('grid-color-trigger');
     const gridPickerPopover = document.getElementById('grid-picker-popover');
     const gridColorPreview = document.getElementById('grid-color-preview');
@@ -239,6 +330,165 @@ document.addEventListener('DOMContentLoaded', () => {
         drawGridOverlay();
     });
 
+
+
+    function saveProject(id = null, clickedBtn = null) {
+        if (!lastImageDataURL) {
+            alert("Сначала загрузите изображение");
+            return;
+        }
+
+        // Generate thumbnail from result canvas
+        const thumbnail = resCanvas.toDataURL('image/jpeg', 0.5);
+
+        const projectData = {
+            id: id || Date.now(),
+            name: `${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
+            thumbnail: thumbnail,
+            imageDataURL: lastImageDataURL,
+            samplePoints: JSON.parse(JSON.stringify(samplePoints)),
+            gridSize: gridSizeInput.value,
+            blurAmount: blurAmountInput.value,
+            offsetX: offsetXInput.value,
+            offsetY: offsetYInput.value,
+            distanceMetric: distanceMetricInput.value,
+            sampleMethod: sampleMethodInput.value,
+            gridColor: gridColorInput.value,
+            gridAlpha: gridAlphaInput.value,
+            gridVisible: gridVisibleInput.checked,
+            currentSortIndex: currentSortIndex
+        };
+
+        let projects = getProjects();
+        if (id) {
+            const index = projects.findIndex(p => p.id === id);
+            if (index !== -1) projects[index] = projectData;
+        } else {
+            projects.unshift(projectData);
+        }
+
+        try {
+            localStorage.setItem('pixelFlowProjects', JSON.stringify(projects));
+            renderProjects();
+
+            const btn = clickedBtn || saveProjectBtn;
+            if (btn) {
+                const oldText = btn.textContent;
+                btn.textContent = "Сохранено!";
+                const oldBg = btn.style.background;
+                btn.style.background = "rgba(34, 197, 94, 0.4)";
+                setTimeout(() => {
+                    if (btn) {
+                        btn.textContent = oldText;
+                        btn.style.background = oldBg;
+                    }
+                }, 2000);
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Ошибка сохранения. Лимит памяти браузера исчерпан.");
+        }
+    }
+
+    if (clearProjectBtn) {
+        clearProjectBtn.onclick = () => {
+            if (confirm("Сбросить текущий проект?")) location.reload();
+        };
+    }
+
+    if (saveProjectBtn) {
+        saveProjectBtn.onclick = () => saveProject();
+    }
+
+    zoomBtn.addEventListener('click', () => {
+        previewArea.classList.toggle('zoom-mode');
+        // Re-render markers as canvas scale changed
+        setTimeout(renderMarkers, 350); // wait for CSS transition
+    });
+
+    function getProjects() {
+        const saved = localStorage.getItem('pixelFlowProjects');
+        return saved ? JSON.parse(saved) : [];
+    }
+
+    function renderProjects() {
+        const projects = getProjects();
+        projectsTotal.textContent = projects.length;
+        projectsList.innerHTML = '';
+
+        // Add special "Save New" card
+        const newCard = document.createElement('div');
+        newCard.className = 'project-card new-project-card';
+        newCard.style.borderStyle = 'dashed';
+        newCard.style.background = 'rgba(255,255,255,0.02)';
+        newCard.style.cursor = 'pointer';
+        newCard.innerHTML = `
+            <div class="project-thumb" style="display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.1);">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.5;">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+            </div>
+            <div class="project-info" style="color: var(--accent); font-weight: 600;">Сохранить как новый проект</div>
+        `;
+        newCard.onclick = () => saveProject();
+        projectsList.appendChild(newCard);
+
+        projects.forEach(project => {
+            const card = document.createElement('div');
+            card.className = 'project-card';
+            card.innerHTML = `
+                <div class="project-thumb" style="background-image: url(${project.thumbnail})"></div>
+                <div class="project-info">${project.name}</div>
+                <div class="project-actions">
+                    <button class="project-btn load" title="Загрузить">Открыть</button>
+                    <button class="project-btn load" style="background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid rgba(34,197,94,0.1);" title="Перезаписать">Сохранить</button>
+                    <button class="project-btn delete" title="Удалить">×</button>
+                </div>
+            `;
+
+            // Load button
+            card.querySelectorAll('.project-btn.load')[0].onclick = () => {
+                initImage(project.imageDataURL, project);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            };
+
+            // Update button (Save here)
+            const updateBtn = card.querySelectorAll('.project-btn.load')[1];
+            updateBtn.onclick = (e) => {
+                e.stopPropagation();
+                if (confirm("Перезаписать этот проект текущими настройками?")) {
+                    saveProject(project.id, updateBtn);
+                }
+            };
+
+            // Delete button
+            card.querySelector('.project-btn.delete').onclick = (e) => {
+                e.stopPropagation();
+                if (confirm("Удалить этот проект?")) {
+                    const newProjects = getProjects().filter(p => p.id !== project.id);
+                    localStorage.setItem('pixelFlowProjects', JSON.stringify(newProjects));
+                    renderProjects();
+                }
+            };
+
+            projectsList.appendChild(card);
+        });
+    }
+
+    renderProjects();
+
+    function loadLastProject() {
+        const projects = getProjects();
+        if (projects.length > 0) {
+            // Option: Auto-load the first one or just keep empty
+            // For now, let's not auto-load to avoid confusion, 
+            // but the user can click from the shelf.
+        }
+    }
+
+    // loadLastProject();
+
     origCanvas.addEventListener('mousedown', (e) => {
         if (!loadedImage) return;
 
@@ -252,7 +502,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (x < 0 || x >= processingWidth || y < 0 || y >= processingHeight) return;
 
         // Check if clicked near an existing marker
-        const hitRadius = 24 * scaleX;
+        const hitRadius = 12 * scaleX; // Approx 1.5x marker radius (8px * 1.5 = 12px)
         let clickedMarkerId = null;
         let minDist = Infinity;
 
@@ -552,32 +802,33 @@ document.addEventListener('DOMContentLoaded', () => {
         const offsetY = parseInt(offsetYInput.value);
         const alpha = parseFloat(gridAlphaInput.value);
 
-        ctxOrig.strokeStyle = gridColorInput.value;
+        ctxOrig.fillStyle = gridColorInput.value;
         ctxOrig.globalAlpha = alpha;
-        ctxOrig.lineWidth = 2;
 
-        ctxOrig.beginPath();
-        // vertical lines
-        let startX = offsetX % size;
-        if (startX < 0) startX += size;
-        // Adjust for floating point edge cases
-        for (let x = startX; x <= processingWidth + size; x += size) {
-            if (x >= 0 && x <= processingWidth) {
-                ctxOrig.moveTo(Math.floor(x) + 0.5, 0);
-                ctxOrig.lineTo(Math.floor(x) + 0.5, processingHeight);
+        // Calculate grid bounds
+        const startBx = Math.floor(-offsetX / size);
+        const startBy = Math.floor(-offsetY / size);
+        const endBx = Math.ceil((processingWidth - offsetX) / size);
+        const endBy = Math.ceil((processingHeight - offsetY) / size);
+
+        for (let by = startBy; by < endBy; by++) {
+            for (let bx = startBx; bx < endBx; bx++) {
+                // Checkerboard: paint only every second cell
+                if ((bx + by) % 2 === 0) continue;
+
+                const gX = offsetX + bx * size;
+                const gY = offsetY + by * size;
+
+                const x1 = Math.max(0, gX);
+                const y1 = Math.max(0, gY);
+                const x2 = Math.min(processingWidth, gX + size);
+                const y2 = Math.min(processingHeight, gY + size);
+
+                if (x2 > x1 && y2 > y1) {
+                    ctxOrig.fillRect(x1, y1, x2 - x1, y2 - y1);
+                }
             }
         }
-
-        // horizontal lines
-        let startY = offsetY % size;
-        if (startY < 0) startY += size;
-        for (let y = startY; y <= processingHeight + size; y += size) {
-            if (y >= 0 && y <= processingHeight) {
-                ctxOrig.moveTo(0, Math.floor(y) + 0.5);
-                ctxOrig.lineTo(processingWidth, Math.floor(y) + 0.5);
-            }
-        }
-        ctxOrig.stroke();
         ctxOrig.globalAlpha = 1.0;
     }
 
