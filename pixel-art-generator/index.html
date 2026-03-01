@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixel Art Generator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <main class="workspace">
+            <aside class="controls">
+                <div class="control-group">
+                    <label class="upload-btn" for="image-upload" id="upload-label">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        Загрузить или вставить (Ctrl+V)
+                    </label>
+                    <input type="file" id="image-upload" accept="image/*" hidden>
+                </div>
+                <div class="control-group">
+                    <div class="label-row">
+                        <label for="grid-size">Ширина результата (Разрешение)</label>
+                        <span id="grid-size-val">64px</span>
+                    </div>
+                    <input type="range" id="grid-size" min="4" max="256" step="1" value="64">
+                    <p class="description">Сколько пикселей в ширину будет у результата</p>
+                </div>
+                <div class="control-group">
+                    <div class="label-row">
+                        <label for="blur-amount">Размытие оригинала</label>
+                        <span id="blur-amount-val">0px</span>
+                    </div>
+                    <input type="range" id="blur-amount" min="0" max="20" step="0.5" value="0">
+                    <p class="description">Сглаживание шумов перед обработкой</p>
+                </div>
+                <div class="control-group">
+                    <div class="label-row">
+                        <label for="offset-x">Смещение сетки X</label>
+                        <span id="offset-x-val">0px</span>
+                    </div>
+                    <input type="range" id="offset-x" min="-100" max="100" value="0" step="1">
+                </div>
+                <div class="control-group">
+                    <div class="label-row">
+                        <label for="offset-y">Смещение сетки Y</label>
+                        <span id="offset-y-val">0px</span>
+                    </div>
+                    <input type="range" id="offset-y" min="-100" max="100" value="0" step="1">
+                </div>
+                <div class="control-group">
+                    <div class="label-row">
+                        <label>Сетка</label>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <div style="position: relative; flex: 1;">
+                            <div id="grid-color-trigger"
+                                style="display: flex; align-items: center; gap: 0.8rem; background: rgba(0,0,0,0.2); border: 1px solid var(--panel-border); padding: 5px 10px; border-radius: 6px; cursor: pointer; transition: background 0.2s;">
+                                <div id="grid-color-preview"
+                                    style="width: 24px; height: 24px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2); background: #000000;">
+                                </div>
+                                <span style="font-size: 0.9rem; flex: 1;">Цвет и Альфа</span>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
+                            </div>
+
+                            <div id="grid-picker-popover"
+                                style="display: none; position: absolute; top: calc(100% + 8px); left: 0; right: 0; background: #1e293b; border: 1px solid var(--accent); border-radius: 8px; padding: 12px; z-index: 100; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+                                <div style="display: flex; flex-direction: column; gap: 12px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <span style="font-size: 0.8rem; color: var(--text-muted);">Выберите цвет</span>
+                                        <input type="color" id="grid-color" value="#000000"
+                                            style="width: 30px; height: 30px; border: none; background: none; cursor: pointer; padding: 0;">
+                                    </div>
+                                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                                        <div style="display: flex; justify-content: space-between; font-size: 0.75rem;">
+                                            <span>Прозрачность</span>
+                                            <span id="grid-alpha-val">0.5</span>
+                                        </div>
+                                        <input type="range" id="grid-alpha" min="0" max="1" step="0.05" value="0.5"
+                                            style="height: 4px;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <label class="tool-btn"
+                            style="width: 40px; height: 38px; margin: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.2); border: 1px solid var(--panel-border); border-radius: 6px; cursor: pointer;"
+                            title="Показать/Скрыть сетку">
+                            <input type="checkbox" id="grid-visible" checked
+                                style="cursor: pointer; width: 16px; height: 16px;">
+                        </label>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="label-row">
+                        <label for="distance-metric">Способ оценки похожести цветов</label>
+                    </div>
+                    <select id="distance-metric"
+                        style="width: 100%; padding: 0.6rem; background: rgba(0,0,0,0.2); color: white; border: 1px solid var(--panel-border); border-radius: 4px; font-family: inherit;">
+                        <option value="perceptual">Оптическое восприятие</option>
+                        <option value="rgb">RGB (Математически)</option>
+                        <option value="hsv">HSV (Тон и Насыщенность)</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <div class="label-row">
+                        <label for="sample-method">Метод взятия цвета</label>
+                    </div>
+                    <select id="sample-method"
+                        style="width: 100%; padding: 0.6rem; background: rgba(0,0,0,0.2); color: white; border: 1px solid var(--panel-border); border-radius: 4px; font-family: inherit;">
+                        <option value="center">Прямо из центра</option>
+                        <option value="average">Усреднённый (сглаживание шума)</option>
+                        <option value="dominant">Доминирующий (сохранение краев)</option>
+                    </select>
+                </div>
+                <div class="control-group" style="margin-top: 1rem;">
+                    <button id="download-btn" class="upload-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        Скачать PNG
+                    </button>
+                </div>
+            </aside>
+            <section class="preview-area">
+                <div class="canvas-container">
+                    <div class="canvas-wrapper">
+                        <h3>Оригинал</h3>
+                        <div style="position: relative; display: inline-block;">
+                            <canvas id="original-canvas"></canvas>
+                            <div id="markers-container"
+                                style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; overflow: hidden; display: none;">
+                            </div>
+                        </div>
+                        <div class="empty-state" id="original-empty">
+                            <span>Нет изображения</span>
+                        </div>
+                    </div>
+                    <div class="canvas-wrapper">
+                        <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+                            <h3>Результат (Пиксель-Арт)</h3>
+                            <span id="result-resolution"
+                                style="font-size: 0.85rem; color: #a5b4fc; background: rgba(255,255,255,0.1); padding: 0.2rem 0.6rem; border-radius: 1rem; display: none;"></span>
+                        </div>
+                        <canvas id="result-canvas"></canvas>
+                        <div class="empty-state" id="result-empty">
+                            <span>Нет изображения</span>
+                        </div>
+                    </div>
+                </div>
+
+                <section class="palette-section" style="margin-top: 1.5rem;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3 style="margin-bottom: 0;">Палитра (<span id="palette-count">0</span>)</h3>
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <span class="description" style="margin-right: 0.5rem;">Alt + Клик по маркеру —
+                                удалить</span>
+                            <button id="sort-palette-btn" class="upload-btn"
+                                style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.85rem; background: var(--panel-border); border: 1px solid var(--panel-border);">
+                                Сортировка: HSV
+                            </button>
+                        </div>
+                    </div>
+                    <div id="palette-container" class="palette-container">
+                        <div class="empty-palette">Кликайте по оригиналу, чтобы создать палитру</div>
+                    </div>
+                </section>
+            </section>
+        </main>
+    </div>
+    <script src="script.js"></script>
+</body>
+
+</html>
