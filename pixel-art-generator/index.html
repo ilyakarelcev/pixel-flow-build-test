@@ -11,6 +11,27 @@
 
 <body>
     <div class="app-container">
+        <header style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem;">
+            <div>
+                <h1 style="margin: 0; font-size: 2.5rem; font-weight: 700; letter-spacing: -0.05em;"><span
+                        style="background: var(--accent-gradient); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Pixel</span>Flow
+                </h1>
+                <p style="margin: 0; color: var(--text-muted); font-size: 1.1rem; margin-top: 0.5rem;">Генератор
+                    пиксель-арта</p>
+            </div>
+            <div id="auth-section" style="display: flex; align-items: center; justify-content: flex-end; gap: 1rem;">
+                <button id="login-btn" class="upload-btn" style="width: auto; padding: 0.5rem 1rem; font-size: 0.9rem;">
+                    Вход через Google
+                </button>
+                <div id="user-info" style="display: none; align-items: center; gap: 1rem;">
+                    <span id="user-name" style="color: var(--text-muted); font-size: 0.9rem;"></span>
+                    <button id="logout-btn" class="upload-btn"
+                        style="background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.2); width: auto; padding: 0.5rem 1rem; font-size: 0.9rem;">
+                        Выйти
+                    </button>
+                </div>
+            </div>
+        </header>
         <main class="workspace">
             <aside class="controls">
                 <div class="control-group">
@@ -149,7 +170,7 @@
                                     stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                                     <circle cx="11" cy="11" r="8"></circle>
                                     <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                                    <line x1="11" y1="8" x2="11" y2="14"></line>
+                                    <line x1="11" y1="8" x2="11" y2="14" class="zoom-plus"></line>
                                     <line x1="8" y1="11" x2="14" y2="11"></line>
                                 </svg>
                             </button>
@@ -233,7 +254,7 @@
             </section>
         </main>
     </div>
-    <script src="script.js"></script>
+    <script type="module" src="script.js"></script>
 </body>
 
 </html>

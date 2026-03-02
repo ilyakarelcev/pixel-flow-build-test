@@ -1,3 +1,27 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+import { getFirestore, collection, doc, setDoc, getDocs, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+// ====== FIREBASE CONFIG ======
+// TODO: Вставьте настройки вашего проекта из Firebase Console 
+// (Project Settings -> General -> Your apps -> Firebase SDK snippet -> Config)
+const firebaseConfig = {
+    apiKey: "AIzaSyDyMoV9MnVUda0S2lTkZMh-USIi8fGVaic",
+    authDomain: "pixel-art-generator-53fd9.firebaseapp.com",
+    projectId: "pixel-art-generator-53fd9",
+    storageBucket: "pixel-art-generator-53fd9.firebasestorage.app",
+    messagingSenderId: "887628311339",
+    appId: "1:887628311339:web:c8185146f247077b8bf36e",
+    measurementId: "G-JW1C4QMR81"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const provider = new GoogleAuthProvider();
+
+let currentUser = null;
+
 document.addEventListener('DOMContentLoaded', () => {
     const uploadInput = document.getElementById('image-upload');
     const gridSizeInput = document.getElementById('grid-size');
@@ -36,6 +60,30 @@ document.addEventListener('DOMContentLoaded', () => {
     const previewArea = document.querySelector('.preview-area');
     const projectsList = document.getElementById('projects-list');
     const projectsTotal = document.getElementById('projects-total');
+
+    const authSection = document.getElementById('auth-section');
+    const loginBtn = document.getElementById('login-btn');
+    const logoutBtn = document.getElementById('logout-btn');
+    const userInfo = document.getElementById('user-info');
+    const userName = document.getElementById('user-name');
+
+    if (loginBtn && logoutBtn) {
+        loginBtn.addEventListener('click', () => signInWithPopup(auth, provider));
+        logoutBtn.addEventListener('click', () => signOut(auth));
+
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            if (user) {
+                loginBtn.style.display = 'none';
+                userInfo.style.display = 'flex';
+                userName.textContent = user.displayName;
+            } else {
+                loginBtn.style.display = 'inline-flex';
+                userInfo.style.display = 'none';
+            }
+            renderProjects(); // reload projects upon auth change
+        });
+    }
 
     const ctxOrig = origCanvas.getContext('2d');
     const ctxRes = resCanvas.getContext('2d');
@@ -171,7 +219,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const c = getPixelColor(pt.x, pt.y);
                 pt.r = c[0]; pt.g = c[1]; pt.b = c[2];
             });
-            currentPalette = samplePoints.map(p => [p.r, p.g, p.b]);
+            currentPalette = samplePoints.map(p => [p.r, p.g, p.b, p.isTransparent]);
             updatePaletteUI();
             drawGridOverlay();
         }
@@ -235,7 +283,7 @@ document.addEventListener('DOMContentLoaded', () => {
             imgData.data[idx] = finalColor[0];
             imgData.data[idx + 1] = finalColor[1];
             imgData.data[idx + 2] = finalColor[2];
-            imgData.data[idx + 3] = 255;
+            imgData.data[idx + 3] = finalColor[3] ? 0 : 255;
         });
         tempCtx.putImageData(imgData, 0, 0);
 
@@ -261,17 +309,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const h = maxY - minY + 1;
         if (w <= 0 || h <= 0) return;
 
-        const colors = currentPalette.map(c => ({ r: c[0], g: c[1], b: c[2], a: 255 }));
+        const colors = currentPalette.map(c => ({ r: c[0], g: c[1], b: c[2], a: c[3] ? 0 : 255 }));
 
-        const blocks = blockColors.map(bc => {
+        const blocks = [];
+        blockColors.forEach(bc => {
             const finalColor = findClosestPaletteColor(bc.r, bc.g, bc.b);
+            if (finalColor[3]) return; // Skip transparent blocks
+
             const colIndex = currentPalette.findIndex(c => c[0] === finalColor[0] && c[1] === finalColor[1] && c[2] === finalColor[2]);
-            return {
+            blocks.push({
                 Pos: { x: bc.bx - minX, y: maxY - bc.by },
                 Size: { x: 1, y: 1 },
                 Col: colIndex,
                 HP: 1
-            };
+            });
         });
 
         const json = {
@@ -332,17 +383,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-    function saveProject(id = null, clickedBtn = null) {
+    async function saveProject(id = null, clickedBtn = null) {
         if (!lastImageDataURL) {
             alert("Сначала загрузите изображение");
             return;
         }
 
-        // Generate thumbnail from result canvas
         const thumbnail = resCanvas.toDataURL('image/jpeg', 0.5);
+        const projectId = id ? id.toString() : Date.now().toString();
 
         const projectData = {
-            id: id || Date.now(),
+            id: projectId,
             name: `${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
             thumbnail: thumbnail,
             imageDataURL: lastImageDataURL,
@@ -356,19 +407,22 @@ document.addEventListener('DOMContentLoaded', () => {
             gridColor: gridColorInput.value,
             gridAlpha: gridAlphaInput.value,
             gridVisible: gridVisibleInput.checked,
-            currentSortIndex: currentSortIndex
+            currentSortIndex: currentSortIndex,
+            timestamp: Date.now()
         };
 
-        let projects = getProjects();
-        if (id) {
-            const index = projects.findIndex(p => p.id === id);
-            if (index !== -1) projects[index] = projectData;
-        } else {
-            projects.unshift(projectData);
-        }
-
         try {
-            localStorage.setItem('pixelFlowProjects', JSON.stringify(projects));
+            if (currentUser) {
+                const docRef = doc(db, `users/${currentUser.uid}/projects`, projectId);
+                await setDoc(docRef, projectData);
+            } else {
+                let projects = getProjectsLocal();
+                const index = projects.findIndex(p => p.id === projectId);
+                if (index !== -1) projects[index] = projectData;
+                else projects.unshift(projectData);
+                localStorage.setItem('pixelFlowProjects', JSON.stringify(projects));
+            }
+
             renderProjects();
 
             const btn = clickedBtn || saveProjectBtn;
@@ -386,7 +440,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (e) {
             console.error(e);
-            alert("Ошибка сохранения. Лимит памяти браузера исчерпан.");
+            alert("Ошибка сохранения. Слишком большая картинка для базы Firestore (>1MB) или нет прав доступа.");
         }
     }
 
@@ -406,13 +460,30 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(renderMarkers, 350); // wait for CSS transition
     });
 
-    function getProjects() {
+    function getProjectsLocal() {
         const saved = localStorage.getItem('pixelFlowProjects');
         return saved ? JSON.parse(saved) : [];
     }
 
-    function renderProjects() {
-        const projects = getProjects();
+    async function renderProjects() {
+        projectsList.innerHTML = '<div style="color:var(--text-muted); font-size: 0.9rem;">Загрузка...</div>';
+
+        let projects = [];
+
+        if (currentUser) {
+            try {
+                const q = query(collection(db, `users/${currentUser.uid}/projects`), orderBy('timestamp', 'desc'));
+                const snap = await getDocs(q);
+                projects = snap.docs.map(doc => doc.data());
+            } catch (err) {
+                console.error(err);
+                projectsList.innerHTML = '<div style="color: #f87171;">Ошибка загрузки из облака. Проверьте Firestore Rules.</div>';
+                return;
+            }
+        } else {
+            projects = getProjectsLocal();
+        }
+
         projectsTotal.textContent = projects.length;
         projectsList.innerHTML = '';
 
@@ -463,12 +534,22 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             // Delete button
-            card.querySelector('.project-btn.delete').onclick = (e) => {
+            card.querySelector('.project-btn.delete').onclick = async (e) => {
                 e.stopPropagation();
                 if (confirm("Удалить этот проект?")) {
-                    const newProjects = getProjects().filter(p => p.id !== project.id);
-                    localStorage.setItem('pixelFlowProjects', JSON.stringify(newProjects));
-                    renderProjects();
+                    if (currentUser) {
+                        try {
+                            await deleteDoc(doc(db, `users/${currentUser.uid}/projects`, project.id));
+                            renderProjects();
+                        } catch (err) {
+                            console.error(err);
+                            alert("Ошибка удаления!");
+                        }
+                    } else {
+                        const newProjects = getProjectsLocal().filter(p => p.id !== project.id);
+                        localStorage.setItem('pixelFlowProjects', JSON.stringify(newProjects));
+                        renderProjects();
+                    }
                 }
             };
 
@@ -521,7 +602,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const idx = samplePoints.findIndex(p => p.id === clickedMarkerId);
                 if (idx !== -1) {
                     samplePoints.splice(idx, 1);
-                    currentPalette = samplePoints.map(p => [p.r, p.g, p.b]);
+                    currentPalette = samplePoints.map(p => [p.r, p.g, p.b, p.isTransparent]);
                     renderMarkers();
                     debounceProcess(false);
                 }
@@ -551,7 +632,7 @@ document.addEventListener('DOMContentLoaded', () => {
             pt.x = x; pt.y = y;
             const c = getPixelColor(x, y);
             pt.r = c[0]; pt.g = c[1]; pt.b = c[2];
-            currentPalette = samplePoints.map(p => [p.r, p.g, p.b]);
+            currentPalette = samplePoints.map(p => [p.r, p.g, p.b, p.isTransparent]);
             renderMarkers();
             renderResult(false);
         }
@@ -570,9 +651,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function addSamplePoint(x, y) {
         const c = getPixelColor(x, y);
-        const pt = { id: nextMarkerId++, x, y, r: c[0], g: c[1], b: c[2] };
+        const pt = { id: nextMarkerId++, x, y, r: c[0], g: c[1], b: c[2], isTransparent: false };
         samplePoints.push(pt);
-        currentPalette = samplePoints.map(p => [p.r, p.g, p.b]);
+        currentPalette = samplePoints.map(p => [p.r, p.g, p.b, p.isTransparent]);
         renderMarkers();
         debounceProcess(false);
         return pt;
@@ -763,7 +844,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     outData[idx] = finalColor[0];
                     outData[idx + 1] = finalColor[1];
                     outData[idx + 2] = finalColor[2];
-                    outData[idx + 3] = 255;
+                    outData[idx + 3] = finalColor[3] ? 0 : 255;
                 }
             }
         }
@@ -864,10 +945,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
         for (let i = 0; i < sortedPalette.length; i++) {
             const color = sortedPalette[i];
+            const isTransparent = color[3] === true;
             const hex = rgbToHex(color[0], color[1], color[2]);
             const swatch = document.createElement('div');
             swatch.className = 'color-swatch';
             swatch.style.backgroundColor = hex;
+
+            if (isTransparent) {
+                swatch.innerHTML = '<span style="color: white; font-weight: bold; font-size: 1.2rem; text-shadow: 0 0 4px #000, 0 0 8px #000; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none;">A</span>';
+            }
+
+            swatch.onclick = (e) => {
+                if (e.target.classList.contains('swatch-delete')) return;
+
+                // Toggle transparency state
+                const marker = samplePoints.find(p => p.r === color[0] && p.g === color[1] && p.b === color[2]);
+                if (marker) {
+                    marker.isTransparent = !marker.isTransparent;
+                    color[3] = marker.isTransparent; // Update immediately
+                    updatePaletteUI();
+                    renderResult();
+                }
+            };
 
             const tooltip = document.createElement('div');
             tooltip.className = 'tooltip';

@@ -184,6 +184,10 @@ input[type="range"]::-webkit-slider-thumb:hover {
     align-items: center;
 }
 
+.preview-area.zoom-mode .zoom-plus {
+    display: none;
+}
+
 .preview-area.zoom-mode canvas {
     max-width: 100%;
     width: 100%;
@@ -288,6 +292,8 @@ input[type="range"]::-webkit-slider-thumb:hover {
 }
 
 canvas {
+    width: 100%;
+    height: auto;
     max-width: 100%;
     border-radius: 0.5rem;
     background: repeating-conic-gradient(#1e293b 0% 25%, #0f172a 0% 25% 50%) 50% / 20px 20px;
