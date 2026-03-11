@@ -44,9 +44,15 @@
                     <aside class="panel left-panel glass-panel">
                         <section class="panel-section">
                             <h2>Board Settings</h2>
-                            <div class="control-group">
-                                <label>Grid Size: <span id="grid-size-val">16</span></label>
-                                <input type="range" id="grid-size" min="2" max="60" value="16">
+                            <div class="control-group" id="grid-size-container">
+                                <button id="btn-toggle-grid-slider" class="btn outline full-width">
+                                    <i class="material-icons">grid_on</i>
+                                    <span>Grid: <span id="grid-size-val-btn">16</span></span>
+                                </button>
+                                <div id="grid-slider-popup" class="hidden-slider">
+                                    <label>Size: <span id="grid-size-val">16</span></label>
+                                    <input type="range" id="grid-size" min="2" max="60" value="16">
+                                </div>
                             </div>
                         </section>
 
@@ -103,20 +109,24 @@
                                     <button id="btn-fit" class="btn secondary" title="Fit to View">Fit</button>
                                 </div>
 
-                                <div id="hp-control-panel" class="floating-panel hidden glass-panel">
-                                    <div id="block-hp-container">
-                                        <label>Selected Item HP: <span id="block-hp-val">1</span></label>
-                                        <input type="range" id="block-hp-slider" min="1" max="100" value="1">
-                                    </div>
-                                    <div id="key-size-container" class="hidden" style="margin-top: 8px;">
-                                        <label>Key Width: <span id="key-w-val">1</span></label>
-                                        <input type="range" id="key-w-slider" min="1" max="10" value="1">
-                                        <label style="margin-top: 4px;">Key Height: <span id="key-h-val">1</span></label>
-                                        <input type="range" id="key-h-slider" min="1" max="10" value="1">
-                                    </div>
-                                </div>
-
                                 <canvas id="editor-canvas"></canvas>
+                            </div>
+                        </div>
+
+                        <div id="hp-control-panel" class="hidden glass-panel hp-bottom-bar">
+                            <div id="block-hp-container">
+                                <label>Selected Item HP: <span id="block-hp-val">1</span></label>
+                                <input type="range" id="block-hp-slider" min="1" max="100" value="1">
+                            </div>
+                            <div id="key-size-container" class="hidden">
+                                <div class="key-control-row">
+                                    <label>Key Width: <span id="key-w-val">1</span></label>
+                                    <input type="range" id="key-w-slider" min="1" max="10" value="1">
+                                </div>
+                                <div class="key-control-row">
+                                    <label>Key Height: <span id="key-h-val">1</span></label>
+                                    <input type="range" id="key-h-slider" min="1" max="10" value="1">
+                                </div>
                             </div>
                         </div>
                     </section>
