@@ -486,7 +486,7 @@ body.alt-pressed canvas {
 .bottom-panel {
   display: flex;
   gap: var(--spacing);
-  height: 220px;
+  min-height: 85vh;
   flex-shrink: 0;
 }
 
@@ -530,15 +530,16 @@ textarea#json-output {
 }
 
 .saves-carousel {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
   gap: 16px;
-  overflow-x: auto;
-  flex: 1;
-  align-items: center;
+  overflow-y: auto;
   padding-bottom: 8px;
+  align-content: start;
 }
 
 .saves-carousel::-webkit-scrollbar {
+  width: 6px;
   height: 6px;
 }
 
@@ -548,21 +549,19 @@ textarea#json-output {
 }
 
 .save-card {
-  width: 140px;
-  height: 140px;
   background: rgba(0, 0, 0, 0.3);
   border: 1px solid var(--border-color);
   border-radius: 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   gap: 8px;
   cursor: pointer;
   transition: var(--transition);
   position: relative;
   overflow: hidden;
-  flex-shrink: 0;
+  padding-bottom: 8px;
 }
 
 .save-card:hover {
@@ -575,6 +574,12 @@ textarea#json-output {
   font-size: 0.9rem;
   text-align: center;
   font-weight: 500;
+  margin-top: 8px;
+}
+
+.save-card.create-new {
+  justify-content: center;
+  min-height: 180px;
 }
 
 .save-card.create-new span {
@@ -588,8 +593,9 @@ textarea#json-output {
 
 .save-img-preview {
   width: 100%;
-  height: 60%;
-  object-fit: cover;
+  aspect-ratio: 1;
+  object-fit: contain;
+  background: rgba(0, 0, 0, 0.5);
   border-bottom: 1px solid var(--border-color);
 }
 
@@ -602,6 +608,7 @@ textarea#json-output {
 }
 
 .save-controls button {
-  font-size: 0.75rem;
-  padding: 4px 8px;
+  font-size: 0.65rem;
+  padding: 4px;
+  flex: 1;
 }

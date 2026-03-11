@@ -940,7 +940,8 @@ async function loadSaves() {
                 <img class="save-img-preview" src="${data.image}" alt="Save Preview">
                 <div class="save-controls">
                     <button class="btn primary" onclick="event.stopPropagation(); window.openJson('${btoa(encodeURIComponent(data.json))}')">Open</button>
-                    <button class="btn secondary" onclick="event.stopPropagation(); window.delSave('${docSnap.id}')">Del</button>
+                    <button class="btn secondary" style="background:#059669; border-color:#059669; color:#fff;" onclick="event.stopPropagation(); window.overwriteSave('${docSnap.id}')">Save</button>
+                    <button class="btn secondary" style="background:#ef4444; border-color:#ef4444; color:#fff;" onclick="event.stopPropagation(); window.delSave('${docSnap.id}')">Del</button>
                 </div>
             `;
             elements.savesCarousel.appendChild(card);
@@ -957,16 +958,95 @@ function clearSaves() {
 
 // Global hooks for dynamic UI
 window.openJson = function (b64json) {
-    const decoded = decodeURIComponent(atob(b64json));
-    // Usually here we'd parse JSON and rebuild `state`. For now just output.
     try {
-        // A full state restore would be complex but requested is just JSON creation.
-        // The prompt says "на остальных карточках — кнопка открыть, сохранить, удалить".
-        // Opening should probably populate JSON box and/or state. We will just dump to JSON box.
+        const decoded = decodeURIComponent(atob(b64json));
         elements.jsonOutput.value = decoded;
-        alert("Project JSON loaded to output panel!");
-    } catch (e) { console.error(e); }
+        const data = JSON.parse(decoded);
+
+        // 1. Grid Size
+        state.gridSize = data.GridSize.x || 16;
+        elements.gridSizeSlider.value = state.gridSize;
+        elements.gridSizeVal.textContent = state.gridSize;
+
+        // 2. Colors
+        if (data.Colors) {
+            state.colors = data.Colors.map((c, i) => ({ id: i, hex: rgbToHex(c.r, c.g, c.b) }));
+            state.nextColorId = state.colors.length > 0 ? state.colors.length : 1;
+        }
+
+        // 3. Blocks
+        state.blocks = new Map();
+        if (data.Blocks) {
+            data.Blocks.forEach(b => {
+                state.blocks.set(`${b.Pos.x},${b.Pos.y}`, { col: b.Col, hp: b.HP || 1 });
+            });
+        }
+
+        // 4. Warehouse Columns
+        state.warehouseColumns = [];
+        if (data.WarehouseColumns) {
+            data.WarehouseColumns.forEach((colData) => {
+                let col = [];
+                if (colData.Units) {
+                    colData.Units.forEach(u => {
+                        col.push({ col: u.Col, ammo: u.Ammo || 1 });
+                    });
+                }
+                state.warehouseColumns.push(col);
+            });
+            state.unitColsCount = Math.max(1, state.warehouseColumns.length);
+            elements.unitColsSlider.value = state.unitColsCount;
+            elements.unitColsVal.textContent = state.unitColsCount;
+        }
+
+        // Clean UI state
+        selectedBlocks = [];
+        selectedBlockPos = null;
+        selectedUnitInfo = null;
+        isDraggingSelection = false;
+        marqueeStartCoords = null;
+        elements.hpPanel.classList.add('hidden');
+        elements.unitAmmoControl.classList.add('hidden');
+
+        if (state.colors.length > 0) {
+            selectedColorId = state.colors[0].id;
+            elements.newColorInput.value = state.colors[0].hex;
+        }
+
+        // Render everything
+        resizeCanvas();
+        renderCanvas();
+        renderWarehouse();
+        renderPalette();
+
+        alert("Project loaded successfully!");
+    } catch (e) {
+        console.error("Load JSON error", e);
+        alert("Failed to parse or load JSON.");
+    }
 };
+
+window.overwriteSave = async function (id) {
+    if (!firebaseUser) return;
+    if (confirm("Overwrite this save with current project?")) {
+        const snap = elements.canvas.toDataURL("image/webp", 0.5);
+        const projData = {
+            userId: firebaseUser.uid,
+            timestamp: Date.now(),
+            image: snap,
+            json: buildJSONString()
+        };
+        try {
+            await setDoc(doc(db, `users/${firebaseUser.uid}/projects`, id), projData, { merge: true });
+            alert("Project overwritten successfully!");
+            loadSaves();
+        } catch (e) {
+            console.error(e);
+            alert("Failed to overwrite. Check console.");
+        }
+    }
+};
+
 window.delSave = async function (id) {
     if (!firebaseUser) return;
     if (confirm("Delete this save?")) {
