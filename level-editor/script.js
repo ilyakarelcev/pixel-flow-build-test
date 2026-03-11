@@ -61,9 +61,11 @@ const elements = {
     btnFit: document.getElementById('btn-fit'),
 
     // Palette
-    paletteList: document.getElementById('palette-list'),
-    newColorInput: document.getElementById('new-color-input'),
-    btnAddColor: document.getElementById('btn-add-color'),
+    paletteList: document.querySelector('.palette-list'),
+    newColorInput: document.querySelector('.hidden-color-input'),
+    btnAddColor: document.querySelector('.btn-add-color-trigger'),
+    palettePanel: document.querySelector('.compact-palette-panel'),
+    btnExpandPalette: document.querySelector('.btn-palette-expand'),
 
     // HP Tool / Key Tool
     hpPanel: document.getElementById('hp-control-panel'),
@@ -220,6 +222,10 @@ function bindEvents() {
         state.colors.push(newColor);
         selectedColorId = newColor.id;
         renderPalette();
+    });
+
+    elements.btnExpandPalette.addEventListener('click', () => {
+        elements.palettePanel.classList.toggle('expanded');
     });
 
     // Make native picker dynamically update the active color!
@@ -827,13 +833,13 @@ function renderPalette() {
 
         const el = document.createElement('div');
         el.className = `palette-item ${color.id === selectedColorId ? 'selected' : ''}`;
+        el.title = `Color ID: ${color.id}`;
         el.innerHTML = `
             <div class="palette-color-preview" style="background-color: ${color.hex}"></div>
             <div class="palette-info">
-                <span>ID ${color.id}</span>
-                <span class="palette-diff ${diffClass}">${diffStr}</span>
+                <span>HP Diff: <b class="${diffClass}">${diffStr}</b></span>
+                <button class="btn-delete-color material-icons-rounded">delete</button>
             </div>
-            <button class="btn-delete-color material-icons-rounded">delete</button>
         `;
 
         el.addEventListener('click', (e) => {
@@ -844,6 +850,13 @@ function renderPalette() {
                 elements.newColorInput.value = color.hex;
                 renderPalette();
             }
+        });
+
+        el.addEventListener('dblclick', () => {
+            selectedColorId = color.id;
+            elements.newColorInput.value = color.hex;
+            elements.newColorInput.click();
+            renderPalette();
         });
 
         elements.paletteList.appendChild(el);
@@ -859,21 +872,22 @@ function renderPalette() {
 
     const keyEl = document.createElement('div');
     keyEl.className = `palette-item ${selectedColorId === 'key' ? 'selected' : ''}`;
+    keyEl.title = "Keys Tool";
     keyEl.innerHTML = `
         <div class="palette-color-preview" style="background-color: rgba(251, 191, 36, 0.5); border-radius: 4px; display: flex; align-items: center; justify-content: center; position: relative;">
           <span style="font-size: 14px;">🗝️</span>
         </div>
         <div class="palette-info">
-            <span>Keys</span>
-            <span class="palette-diff ${locksDiffClass}">${locksDiffStr}</span>
+            <span>Keys Diff: <b class="${locksDiffClass}">${locksDiffStr}</b></span>
+            <button class="btn-delete-color material-icons-rounded" style="visibility:hidden">delete</button>
         </div>
-        <button class="btn-delete-color material-icons-rounded" style="visibility:hidden">delete</button>
     `;
     keyEl.addEventListener('click', () => {
         selectedColorId = 'key';
         renderPalette();
     });
     elements.paletteList.appendChild(keyEl);
+
 }
 
 function updatePaletteStats() {

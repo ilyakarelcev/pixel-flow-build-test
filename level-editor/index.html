@@ -40,7 +40,7 @@
             <!-- Left & Center columns pooled together -->
             <div class="main-content-area">
                 <div class="editor-row">
-                    <!-- LEFT PANEL: Board Settings & Palette -->
+                    <!-- LEFT PANEL: Board Settings & Tools -->
                     <aside class="panel left-panel glass-panel">
                         <section class="panel-section">
                             <h2>Board Settings</h2>
@@ -70,44 +70,54 @@
                                 </button>
                             </div>
                         </section>
-
-                        <section class="panel-section palette-section flex-grow">
-                            <h2>Color Palette</h2>
-                            <div class="color-actions">
-                                <input type="color" id="new-color-input" value="#ff3366">
-                                <button id="btn-add-color" class="btn secondary">Add Color</button>
-                            </div>
-                            <div id="palette-list" class="palette-list">
-                                <!-- Colors will be injected here -->
-                            </div>
-                        </section>
                     </aside>
 
-                    <!-- CENTER: Canvas -->
+                    <!-- CENTER: Canvas & Palette -->
                     <section class="center-stage">
-                        <div class="canvas-container glass-panel" id="canvas-wrapper">
-                            <div class="zoom-controls">
-                                <button id="btn-zoom-in" class="btn secondary icon-only" title="Zoom In"><i
-                                        class="material-icons">add</i></button>
-                                <button id="btn-zoom-out" class="btn secondary icon-only" title="Zoom Out"><i
-                                        class="material-icons">remove</i></button>
-                                <button id="btn-fit" class="btn secondary" title="Fit to View">Fit</button>
-                            </div>
-
-                            <div id="hp-control-panel" class="floating-panel hidden glass-panel">
-                                <div id="block-hp-container">
-                                    <label>Selected Item HP: <span id="block-hp-val">1</span></label>
-                                    <input type="range" id="block-hp-slider" min="1" max="100" value="1">
+                        <div class="workspace-layout">
+                            <!-- New Compact Color Palette -->
+                            <aside class="compact-palette-panel glass-panel">
+                                <button class="btn-palette-expand icon-only" title="Toggle Detail View">
+                                    <i class="material-icons">chevron_right</i>
+                                </button>
+                                
+                                <div class="palette-list">
+                                    <!-- Colors will be injected here -->
                                 </div>
-                                <div id="key-size-container" class="hidden" style="margin-top: 8px;">
-                                    <label>Key Width: <span id="key-w-val">1</span></label>
-                                    <input type="range" id="key-w-slider" min="1" max="10" value="1">
-                                    <label style="margin-top: 4px;">Key Height: <span id="key-h-val">1</span></label>
-                                    <input type="range" id="key-h-slider" min="1" max="10" value="1">
-                                </div>
-                            </div>
 
-                            <canvas id="editor-canvas"></canvas>
+                                <div class="palette-footer">
+                                    <button class="btn-add-color-trigger icon-only" title="Add New Color">
+                                        <i class="material-icons">add</i>
+                                    </button>
+                                    <!-- Hidden input for the color picker -->
+                                    <input type="color" class="hidden-color-input" value="#ff3366" style="display: none;">
+                                </div>
+                            </aside>
+
+                            <div class="canvas-container glass-panel" id="canvas-wrapper">
+                                <div class="zoom-controls">
+                                    <button id="btn-zoom-in" class="btn secondary icon-only" title="Zoom In"><i
+                                            class="material-icons">add</i></button>
+                                    <button id="btn-zoom-out" class="btn secondary icon-only" title="Zoom Out"><i
+                                            class="material-icons">remove</i></button>
+                                    <button id="btn-fit" class="btn secondary" title="Fit to View">Fit</button>
+                                </div>
+
+                                <div id="hp-control-panel" class="floating-panel hidden glass-panel">
+                                    <div id="block-hp-container">
+                                        <label>Selected Item HP: <span id="block-hp-val">1</span></label>
+                                        <input type="range" id="block-hp-slider" min="1" max="100" value="1">
+                                    </div>
+                                    <div id="key-size-container" class="hidden" style="margin-top: 8px;">
+                                        <label>Key Width: <span id="key-w-val">1</span></label>
+                                        <input type="range" id="key-w-slider" min="1" max="10" value="1">
+                                        <label style="margin-top: 4px;">Key Height: <span id="key-h-val">1</span></label>
+                                        <input type="range" id="key-h-slider" min="1" max="10" value="1">
+                                    </div>
+                                </div>
+
+                                <canvas id="editor-canvas"></canvas>
+                            </div>
                         </div>
                     </section>
                 </div>

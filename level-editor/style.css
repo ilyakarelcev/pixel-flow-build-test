@@ -282,39 +282,63 @@ input[type="range"] {
 }
 
 /* PALETTE */
-.color-actions {
+.workspace-layout {
   display: flex;
-  gap: 12px;
-  align-items: center;
+  flex: 1;
+  gap: var(--spacing);
+  min-height: 0;
 }
 
-input[type="color"] {
-  width: 40px;
-  height: 40px;
-  padding: 2px;
-  border: none;
-  border-radius: 6px;
+.compact-palette-panel {
+  display: flex;
+  flex-direction: column;
+  width: 60px;
+  flex-shrink: 0;
+  padding: 10px;
+  gap: 12px;
+  align-items: center;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.compact-palette-panel.expanded {
+  width: 220px;
+  align-items: stretch;
+}
+
+.btn-palette-expand {
   background: transparent;
+  border: none;
+  color: var(--text-muted);
   cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.compact-palette-panel.expanded .btn-palette-expand {
+  transform: rotate(180deg);
 }
 
 .palette-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
+  width: 100%;
 }
 
 .palette-item {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px;
+  gap: 12px;
+  padding: 6px;
   background: rgba(0, 0, 0, 0.2);
   border-radius: 8px;
   border: 1px solid transparent;
   cursor: pointer;
   transition: var(--transition);
+  min-width: 0;
 }
+
 
 .palette-item:hover {
   background: rgba(255, 255, 255, 0.05);
@@ -322,23 +346,49 @@ input[type="color"] {
 
 .palette-item.selected {
   border-color: var(--primary-color);
-  background: rgba(59, 130, 246, 0.1);
+  background: rgba(59, 130, 246, 0.2);
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.3);
 }
 
 .palette-color-preview {
-  width: 24px;
-  height: 24px;
-  border-radius: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  box-shadow: inset 0 0 5px rgba(0,0,0,0.5);
+  transition: transform 0.2s ease;
 }
+
+.palette-item:hover .palette-color-preview {
+  transform: scale(1.1);
+}
+
 
 .palette-info {
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: space-between;
   flex: 1;
-  padding-left: 12px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease;
+  min-width: 0;
 }
+
+.compact-palette-panel.expanded .palette-info {
+  opacity: 1;
+  visibility: visible;
+}
+
+.palette-info span {
+  font-size: 0.85rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 
 .palette-diff {
   font-size: 0.85rem;
@@ -368,11 +418,49 @@ input[type="color"] {
   color: var(--text-muted);
   cursor: pointer;
   padding: 4px;
+  display: none;
+}
+
+.compact-palette-panel.expanded .btn-delete-color {
+  display: block;
 }
 
 .btn-delete-color:hover {
   color: #ef4444;
 }
+
+.palette-footer {
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-add-color-trigger {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+}
+
+.btn-add-color-trigger:hover {
+  background: var(--primary-hover);
+  transform: scale(1.1) rotate(90deg);
+}
+
+
 
 /* CANVAS */
 .center-stage {
