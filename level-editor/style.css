@@ -458,6 +458,7 @@ body.alt-pressed canvas {
   -moz-user-select: none;
   -ms-user-select: none;
   pointer-events: auto;
+  touch-action: none; /* Prevent scrolling on mobile while dragging */
 }
 
 .unit-circle:active {
@@ -480,6 +481,7 @@ body.alt-pressed canvas {
   border-color: #fbbf24 !important;
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.6) !important;
   z-index: 1000 !important;
+  cursor: grabbing !important;
 }
 
 /* BOTTOM PANEL */

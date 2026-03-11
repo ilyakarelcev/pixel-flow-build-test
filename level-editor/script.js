@@ -30,6 +30,11 @@ let isDraggingSelection = false;
 let selectionDragVisualOffset = { dx: 0, dy: 0 };
 let dragStartCoords = null;
 
+// --- DRAG & DROP STATE ---
+let isDraggingUnit = false;
+let draggedUnitInfo = null; // { colIndex, unitIndex, data, inserted }
+let dragGhostEl = null;
+
 // --- ELEMENTS ---
 const elements = {
     canvas: document.getElementById('editor-canvas'),
@@ -707,7 +712,7 @@ function shuffleUnits() {
     renderWarehouse();
 }
 
-function renderWarehouse() {
+function renderWarehouse(isDraggingPass = false) {
     elements.warehouseContainer.innerHTML = '';
 
     state.warehouseColumns.forEach((colData, colIndex) => {
@@ -727,16 +732,17 @@ function renderWarehouse() {
             unitEl.dataset.colIndex = colIndex;
             unitEl.dataset.unitIndex = unitIndex;
 
-            if (selectedUnitInfo && selectedUnitInfo.colIndex === colIndex && selectedUnitInfo.unitIndex === unitIndex) {
+            if (!isDraggingPass && selectedUnitInfo && selectedUnitInfo.colIndex === colIndex && selectedUnitInfo.unitIndex === unitIndex) {
                 unitEl.classList.add('selected-unit');
             }
 
-            unitEl.addEventListener('click', () => {
-                selectedUnitInfo = { colIndex, unitIndex };
-                elements.unitAmmoControl.classList.remove('hidden');
-                elements.unitAmmoSlider.value = unitData.ammo;
-                elements.unitAmmoVal.textContent = unitData.ammo;
-                renderWarehouse(); // Recolor outline
+            if (isDraggingPass && draggedUnitInfo && draggedUnitInfo.colIndex === colIndex && draggedUnitInfo.unitIndex === unitIndex) {
+                unitEl.style.opacity = '0.3';
+            }
+
+            // Click vs pointerdown needs to be handled carefully. We'll use pointerdown to trigger drag, and if they release without moving, it's a click.
+            unitEl.addEventListener('pointerdown', (e) => {
+                onUnitPointerDown(e, colIndex, unitIndex, unitData, unitEl);
             });
 
             colDiv.appendChild(unitEl);
@@ -744,36 +750,137 @@ function renderWarehouse() {
 
         elements.warehouseContainer.appendChild(colDiv);
     });
+}
 
-    // Setup SortableJS for drag & drop
-    document.querySelectorAll('.warehouse-col').forEach(el => {
-        new Sortable(el, {
-            group: 'warehouse', // set both lists to same group
-            animation: 100,
-            ghostClass: 'unit-ghost',
-            dragClass: 'unit-drag',
-            forceFallback: true,
-            fallbackClass: 'unit-drag',
-            fallbackTolerance: 3, // Prevent accidental clicks from triggering drag
-            direction: 'vertical',
-            swapThreshold: 0.65,
-            emptyInsertThreshold: 10,
-            onEnd: function (evt) {
-                const oldColIdx = parseInt(evt.from.dataset.colIndex);
-                const newColIdx = parseInt(evt.to.dataset.colIndex);
-                const oldIdx = evt.oldIndex;
-                const newIdx = evt.newIndex;
+function updateGhostPosition(cx, cy) {
+    if (!dragGhostEl) return;
+    dragGhostEl.style.left = (cx - 18) + 'px';
+    dragGhostEl.style.top = (cy - 18) + 'px';
+}
 
-                // Moved item
-                const unit = state.warehouseColumns[oldColIdx].splice(oldIdx, 1)[0];
-                state.warehouseColumns[newColIdx].splice(newIdx, 0, unit);
+function onUnitPointerDown(e, colIndex, unitIndex, unitData, unitEl) {
+    if (e.button !== undefined && e.button !== 0) return;
+    e.preventDefault();
+    
+    isDraggingUnit = true;
+    draggedUnitInfo = {
+        colIndex,
+        unitIndex,
+        data: unitData,
+        inserted: true,
+        startX: e.clientX,
+        startY: e.clientY,
+        hasMoved: false
+    };
+    
+    dragGhostEl = unitEl.cloneNode(true);
+    dragGhostEl.classList.add('unit-drag');
+    dragGhostEl.style.position = 'fixed';
+    dragGhostEl.style.pointerEvents = 'none';
+    dragGhostEl.style.zIndex = '9999';
+    dragGhostEl.style.margin = '0';
+    document.body.appendChild(dragGhostEl);
+    
+    updateGhostPosition(e.clientX, e.clientY);
+    
+    document.addEventListener('pointermove', onUnitPointerMove);
+    document.addEventListener('pointerup', onUnitPointerUp);
+    
+    renderWarehouse(true);
+}
 
-                selectedUnitInfo = null;
-                elements.unitAmmoControl.classList.add('hidden');
-                renderWarehouse();
-            },
-        });
+function onUnitPointerMove(e) {
+    if (!isDraggingUnit) return;
+    
+    // Check if enough distance to consider moving
+    if (!draggedUnitInfo.hasMoved) {
+        const dx = e.clientX - draggedUnitInfo.startX;
+        const dy = e.clientY - draggedUnitInfo.startY;
+        if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+            draggedUnitInfo.hasMoved = true;
+        } else {
+            return;
+        }
+    }
+
+    updateGhostPosition(e.clientX, e.clientY);
+    
+    const cols = document.querySelectorAll('.warehouse-col');
+    if (cols.length === 0) return;
+    
+    let closestColIdx = 0;
+    let minHDist = Infinity;
+    
+    cols.forEach((colEl, idx) => {
+        const rect = colEl.getBoundingClientRect();
+        const centerColX = rect.left + rect.width / 2;
+        const dist = Math.abs(e.clientX - centerColX);
+        if (dist < minHDist) {
+            minHDist = dist;
+            closestColIdx = idx;
+        }
     });
+    
+    const targetColEl = cols[closestColIdx];
+    const rect = targetColEl.getBoundingClientRect();
+    
+    const offsetY = e.clientY - rect.top - 4; // 4px padding
+    let targetRowIdx = Math.floor(offsetY / 40); // 36px unit + 4px gap
+    
+    let colLen = state.warehouseColumns[closestColIdx].length;
+    if (draggedUnitInfo.colIndex === closestColIdx) {
+        colLen -= 1; 
+    }
+    
+    if (targetRowIdx < 0) targetRowIdx = 0;
+    if (targetRowIdx > colLen) targetRowIdx = colLen;
+    
+    if (draggedUnitInfo.colIndex !== closestColIdx || draggedUnitInfo.unitIndex !== targetRowIdx) {
+        if (draggedUnitInfo.inserted) {
+            state.warehouseColumns[draggedUnitInfo.colIndex].splice(draggedUnitInfo.unitIndex, 1);
+        }
+        
+        state.warehouseColumns[closestColIdx].splice(targetRowIdx, 0, draggedUnitInfo.data);
+        
+        draggedUnitInfo.colIndex = closestColIdx;
+        draggedUnitInfo.unitIndex = targetRowIdx;
+        draggedUnitInfo.inserted = true;
+        
+        renderWarehouse(true);
+    }
+}
+
+function onUnitPointerUp(e) {
+    if (!isDraggingUnit) return;
+    isDraggingUnit = false;
+    
+    if (dragGhostEl) {
+        dragGhostEl.remove();
+        dragGhostEl = null;
+    }
+    
+    document.removeEventListener('pointermove', onUnitPointerMove);
+    document.removeEventListener('pointerup', onUnitPointerUp);
+    
+    // If we didn't move it, treat it as a click
+    if (!draggedUnitInfo.hasMoved) {
+        selectedUnitInfo = { colIndex: draggedUnitInfo.colIndex, unitIndex: draggedUnitInfo.unitIndex };
+        elements.unitAmmoControl.classList.remove('hidden');
+        elements.unitAmmoSlider.value = draggedUnitInfo.data.ammo;
+        elements.unitAmmoVal.textContent = draggedUnitInfo.data.ammo;
+    } else {
+        selectedUnitInfo = {
+            colIndex: draggedUnitInfo.colIndex,
+            unitIndex: draggedUnitInfo.unitIndex
+        };
+        elements.unitAmmoControl.classList.remove('hidden');
+        elements.unitAmmoSlider.value = draggedUnitInfo.data.ammo;
+        elements.unitAmmoVal.textContent = draggedUnitInfo.data.ammo;
+        updatePaletteStats(); // Also update counts across columns in case we need
+    }
+    
+    draggedUnitInfo = null;
+    renderWarehouse();
 }
 
 // --- JSON GENERATOR ---
