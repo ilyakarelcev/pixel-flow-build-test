@@ -59,6 +59,9 @@ const elements = {
     btnZoomIn: document.getElementById('btn-zoom-in'),
     btnZoomOut: document.getElementById('btn-zoom-out'),
     btnFit: document.getElementById('btn-fit'),
+    btnToggleGrid: document.getElementById('btn-toggle-grid-slider'),
+    gridSliderPopup: document.getElementById('grid-slider-popup'),
+    gridSizeValBtn: document.getElementById('grid-size-val-btn'),
 
     // Palette
     paletteList: document.querySelector('.palette-list'),
@@ -134,6 +137,12 @@ function bindEvents() {
         if (e.key.toLowerCase() === 'i') {
             setTool('picker');
         }
+        if (e.key.toLowerCase() === 'b') {
+            setTool('brush');
+        }
+        if (e.key.toLowerCase() === 'w') {
+            setTool('select');
+        }
     });
     window.addEventListener('keyup', (e) => {
         if (e.key === 'Alt' || !e.altKey) {
@@ -156,9 +165,23 @@ function bindEvents() {
     elements.gridSizeSlider.addEventListener('input', (e) => {
         state.gridSize = parseInt(e.target.value);
         elements.gridSizeVal.textContent = state.gridSize;
+        elements.gridSizeValBtn.textContent = state.gridSize;
         trimBlocks();
         fitCanvas();
         renderCanvas();
+    });
+
+    elements.btnToggleGrid.addEventListener('click', () => {
+        elements.gridSliderPopup.classList.toggle('show');
+    });
+
+    // Close grid popup when clicking outside
+    window.addEventListener('mousedown', (e) => {
+        if (elements.gridSliderPopup.classList.contains('show') && 
+            !elements.gridSliderPopup.contains(e.target) && 
+            !elements.btnToggleGrid.contains(e.target)) {
+            elements.gridSliderPopup.classList.remove('show');
+        }
     });
 
     // Tools
@@ -372,14 +395,21 @@ function onCanvasMouseDown(e) {
         let clickedOnSelectedBlock = selectedBlocks.find(p => p.x === coords.x && p.y === coords.y);
         let clickedOnSelectedKey = selectedKeys.find(p => p.x === coords.x && p.y === coords.y);
 
-        // Single block click handling with modifiers
-        if (e.shiftKey) {
-            if (!clickedOnSelectedBlock && state.blocks.has(`${coords.x},${coords.y}`)) selectedBlocks.push({ x: coords.x, y: coords.y });
-            if (!clickedOnSelectedKey && state.keys.has(`${coords.x},${coords.y}`)) selectedKeys.push({ x: coords.x, y: coords.y });
-            isDraggingSelection = false;
-        } else if (e.altKey) {
-            selectedBlocks = selectedBlocks.filter(p => p.x !== coords.x || p.y !== coords.y);
-            selectedKeys = selectedKeys.filter(p => p.x !== coords.x || p.y !== coords.y);
+        if (e.shiftKey || e.altKey) {
+            // Modifiers always toggle/marquee
+            if (state.blocks.has(`${coords.x},${coords.y}`) || state.keys.has(`${coords.x},${coords.y}`)) {
+                // If it's a block/key, toggle it immediately
+                if (e.shiftKey) {
+                    if (!clickedOnSelectedBlock && state.blocks.has(`${coords.x},${coords.y}`)) selectedBlocks.push({ x: coords.x, y: coords.y });
+                    if (!clickedOnSelectedKey && state.keys.has(`${coords.x},${coords.y}`)) selectedKeys.push({ x: coords.x, y: coords.y });
+                } else if (e.altKey) {
+                    selectedBlocks = selectedBlocks.filter(p => p.x !== coords.x || p.y !== coords.y);
+                    selectedKeys = selectedKeys.filter(p => p.x !== coords.x || p.y !== coords.y);
+                }
+            }
+            // Also start marquee in case they drag
+            marqueeStartCoords = coords;
+            currentMouseCoords = coords;
             isDraggingSelection = false;
         } else {
             // Normal click
@@ -852,9 +882,15 @@ function renderPalette() {
             }
         });
 
-        el.addEventListener('dblclick', () => {
+        el.addEventListener('dblclick', (e) => {
             selectedColorId = color.id;
             elements.newColorInput.value = color.hex;
+            
+            // Position the invisible picker near the mouse/element to influence native dialog position
+            const rect = el.getBoundingClientRect();
+            elements.newColorInput.style.left = `${rect.right + 10}px`;
+            elements.newColorInput.style.top = `${rect.top}px`;
+            
             elements.newColorInput.click();
             renderPalette();
         });

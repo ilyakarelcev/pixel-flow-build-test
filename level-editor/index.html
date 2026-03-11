@@ -61,13 +61,13 @@
                             <div class="hint">Hold <b>ALT</b> while using Brush to delete blocks.</div>
                             <div class="tool-group">
                                 <button id="tool-brush" class="tool-btn active"
-                                    title="Brush (Left Click to draw, Alt+Click to erase)">
+                                    title="Brush (B)">
                                     <i class="material-icons">brush</i>
-                                    <span>Brush</span>
+                                    <span>Brush (B)</span>
                                 </button>
-                                <button id="tool-select" class="tool-btn" title="Select (Drag to select, then drag to move)">
+                                <button id="tool-select" class="tool-btn" title="Select (W)">
                                     <i class="material-icons">select_all</i>
-                                    <span>Select</span>
+                                    <span>Select (W)</span>
                                 </button>
                                 <button id="tool-picker" class="tool-btn"
                                     title="Color Picker (Click on any pixel to copy its color)">
@@ -95,8 +95,8 @@
                                     <button class="btn-add-color-trigger icon-only" title="Add New Color">
                                         <i class="material-icons">add</i>
                                     </button>
-                                    <!-- Hidden input for the color picker -->
-                                    <input type="color" class="hidden-color-input" value="#ff3366" style="display: none;">
+                                    <!-- Hidden input for the color picker - moved dynamically on dblclick -->
+                                    <input type="color" class="hidden-color-input" value="#ff3366" style="position: absolute; opacity: 0; pointer-events: none; width: 0; height: 0; border: none; padding: 0;">
                                 </div>
                             </aside>
 

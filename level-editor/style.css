@@ -137,6 +137,30 @@ header.navbar {
   overflow-y: auto;
 }
 
+.left-panel {
+  width: 160px; /* Narrower left panel (half of 320) */
+  padding: 16px;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.hidden-slider {
+  display: none;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 12px;
+  border-radius: 8px;
+  margin-top: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.hidden-slider.show {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .panel::-webkit-scrollbar {
   width: 6px;
 }
@@ -320,10 +344,16 @@ input[type="range"] {
 }
 
 .palette-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* 2 swatches per row */
+  gap: 6px; /* Tighter vertical spacing */
+  width: 100%;
+}
+
+.compact-palette-panel.expanded .palette-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  width: 100%;
+  gap: 8px;
 }
 
 .palette-item {
@@ -475,9 +505,9 @@ input[type="range"] {
   flex: 1;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start; /* Aligned to top */
   overflow: auto;
-  padding: 24px;
+  padding: 48px 24px 24px 24px; /* Added more top padding as requested */
   position: relative;
 }
 
@@ -503,14 +533,47 @@ body.alt-pressed canvas {
   cursor: not-allowed !important;
 }
 
-.floating-panel {
-  position: absolute;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 100;
+.hp-bottom-bar {
+  margin-top: -8px; 
+  z-index: 10;
   padding: 16px 24px;
-  width: 300px;
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.hp-bottom-bar #block-hp-container, 
+.hp-bottom-bar #key-size-container {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+  max-width: 600px;
+}
+
+.hp-bottom-bar .control-group {
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.hp-bottom-bar label {
+  white-space: nowrap;
+  min-width: 140px;
+}
+
+.key-control-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.key-control-row label {
+  min-width: 90px;
 }
 
 /* WAREHOUSE UNITS */
