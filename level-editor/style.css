@@ -141,6 +141,8 @@ header.navbar {
   width: 160px; /* Narrower left panel (half of 320) */
   padding: 16px;
   overflow: visible; /* Allow popups to exit boundaries */
+  position: relative;
+  z-index: 100; /* Ensure popups are above other panels */
 }
 
 .full-width {
@@ -328,9 +330,9 @@ input[type="range"] {
 .compact-palette-panel {
   display: flex;
   flex-direction: column;
-  width: 72px; /* Slightly wider for better spacing */
+  width: 72px; /* Sufficient for 2 columns of small swatches */
   flex-shrink: 0;
-  padding: 12px 8px;
+  padding: 12px 6px;
   gap: 16px;
   align-items: center;
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -356,11 +358,10 @@ input[type="range"] {
 }
 
 .palette-list {
-  display: flex;
-  flex-direction: column;
-  gap: 14px; /* More vertical distance between samples */
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* 2 swatches per row */
+  gap: 8px; /* Balanced spacing */
   width: 100%;
-  align-items: center;
 }
 
 .compact-palette-panel.expanded .palette-list {
@@ -391,8 +392,8 @@ input[type="range"] {
   cursor: pointer;
   transition: var(--transition);
   min-width: 0;
-  width: 44px;
-  height: 44px;
+  width: 30px;
+  height: 30px;
   position: relative;
 }
 
@@ -402,16 +403,17 @@ input[type="range"] {
 
 .palette-item.selected .palette-color-preview {
   outline: 3px solid #fbbf24;
-  outline-offset: 2px;
+  outline: 2px solid #fbbf24;
+  outline-offset: 1.5px;
   border-color: #fbbf24;
 }
 
 .palette-color-preview {
-  width: 40px;
-  height: 40px;
+  width: 26px;
+  height: 26px;
   flex-shrink: 0;
   border-radius: 4px;
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
   transition: transform 0.2s ease;
 }
 
@@ -806,4 +808,22 @@ textarea#json-output {
   font-size: 0.65rem;
   padding: 4px;
   flex: 1;
+}
+
+/* CURSOR FOLLOWER */
+.cursor-follower {
+  position: fixed;
+  width: 12px;
+  height: 12px;
+  pointer-events: none;
+  z-index: 10000;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 2px;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+  display: none;
+  transform: translate(12px, 12px); /* Offset from cursor */
+}
+
+body.brush-tool .cursor-follower {
+  display: block;
 }

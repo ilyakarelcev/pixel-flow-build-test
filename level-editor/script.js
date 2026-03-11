@@ -113,7 +113,8 @@ const elements = {
     userInfo: document.getElementById('user-info'),
     userName: document.getElementById('user-name'),
     userAvatar: document.getElementById('user-avatar'),
-    loginHint: document.getElementById('login-hint')
+    loginHint: document.getElementById('login-hint'),
+    cursorFollower: document.getElementById('cursor-follower')
 };
 
 // --- INITIALIZATION ---
@@ -127,6 +128,7 @@ function init() {
     renderCanvas();
 
     setupAuthListeners();
+    setTool('brush'); // Set initial classes
 }
 
 function bindEvents() {
@@ -155,7 +157,10 @@ function bindEvents() {
 
     // Canvas Listeners
     elements.canvas.addEventListener('mousedown', onCanvasMouseDown);
-    window.addEventListener('mousemove', onCanvasMouseMove);
+    window.addEventListener('mousemove', (e) => {
+        onCanvasMouseMove(e);
+        updateCursorFollower(e);
+    });
     window.addEventListener('mouseup', onCanvasMouseUp);
     window.addEventListener('resize', fitCanvas);
 
@@ -259,6 +264,7 @@ function bindEvents() {
             renderCanvas();
             renderWarehouse();
             updatePaletteStats();
+            updateCursorFollowerColor();
         }
     });
 
@@ -813,31 +819,57 @@ function renderCanvas() {
 
 // --- TOOLS ---
 function setTool(tool) {
-    if (currentTool === 'select') {
+    currentTool = tool;
+    
+    // UI Updates
+    elements.btnBrush.classList.toggle('active', tool === 'brush');
+    elements.btnSelect.classList.toggle('active', tool === 'select');
+    elements.btnPicker.classList.toggle('active', tool === 'picker');
+    document.body.classList.toggle('brush-tool', tool === 'brush');
+
+    // Cursor handling
+    if (tool === 'picker') {
+        document.body.style.cursor = 'crosshair';
+    } else if (tool === 'brush') {
+        document.body.style.cursor = 'crosshair';
+        updateCursorFollowerColor();
+    } else {
+        document.body.style.cursor = 'default';
+    }
+
+    if (tool !== 'select') {
         selectedBlocks = [];
         selectedKeys = [];
         marqueeStartCoords = null;
+        currentMouseCoords = null;
         isDraggingSelection = false;
+        showControlPanels();
     }
 
     if (tool !== 'brush') {
         document.body.classList.remove('alt-pressed');
     }
 
-    currentTool = tool;
-    document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById('tool-' + tool).classList.add('active');
-
-    if (tool !== 'hp' && tool !== 'select') {
-        selectedBlockPos = null;
-        elements.hpPanel.classList.add('hidden');
-    }
-
-    if (tool === 'select' && (selectedBlocks.length > 0 || selectedKeys.length > 0)) {
-        elements.hpPanel.classList.remove('hidden');
-    }
-
     renderCanvas();
+}
+
+function updateCursorFollower(e) {
+    if (elements.cursorFollower) {
+        elements.cursorFollower.style.left = e.clientX + 'px';
+        elements.cursorFollower.style.top = e.clientY + 'px';
+    }
+}
+
+function updateCursorFollowerColor() {
+    if (!elements.cursorFollower) return;
+    if (selectedColorId === 'key') {
+        elements.cursorFollower.style.backgroundColor = 'rgba(251, 191, 36, 0.8)';
+    } else {
+        const c = state.colors.find(col => col.id === selectedColorId);
+        if (c) {
+            elements.cursorFollower.style.backgroundColor = c.hex;
+        }
+    }
 }
 
 // --- PALETTE ---
@@ -879,6 +911,7 @@ function renderPalette() {
                 selectedColorId = color.id;
                 elements.newColorInput.value = color.hex;
                 renderPalette();
+                updateCursorFollowerColor();
             }
         });
 
@@ -886,7 +919,6 @@ function renderPalette() {
             selectedColorId = color.id;
             elements.newColorInput.value = color.hex;
             
-            // Position the invisible picker near the mouse/element to influence native dialog position
             const rect = el.getBoundingClientRect();
             elements.newColorInput.style.left = `${rect.right + 10}px`;
             elements.newColorInput.style.top = `${rect.top}px`;
@@ -921,9 +953,9 @@ function renderPalette() {
     keyEl.addEventListener('click', () => {
         selectedColorId = 'key';
         renderPalette();
+        updateCursorFollowerColor();
     });
     elements.paletteList.appendChild(keyEl);
-
 }
 
 function updatePaletteStats() {
