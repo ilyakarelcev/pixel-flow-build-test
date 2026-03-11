@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixel Flow Level Editor</title>
+
+    <!-- Fonts and Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Rounded" rel="stylesheet">
+
+    <!-- SortableJS for easy drag-and-drop lists -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="dark-theme">
+    <div id="app">
+        <!-- TOP NAVBAR -->
+        <header class="navbar glass-panel">
+            <div class="logo">
+                <span class="material-icons-rounded">view_quilt</span>
+                <h1>Pixel Flow Build</h1>
+            </div>
+
+            <div class="auth-section">
+                <div id="user-info" class="hidden">
+                    <img id="user-avatar" src="" alt="Avatar">
+                    <span id="user-name">User</span>
+                    <button id="btn-logout" class="btn outline">Logout</button>
+                </div>
+                <button id="btn-login" class="btn primary">Login with Google</button>
+            </div>
+        </header>
+
+        <!-- MAIN WORKSPACE -->
+        <main class="workspace">
+
+            <!-- LEFT PANEL: Tools & Palette -->
+            <aside class="panel left-panel glass-panel">
+                <section class="panel-section">
+                    <h2>Board Settings</h2>
+                    <div class="control-group">
+                        <label>Grid Size: <span id="grid-size-val">16</span></label>
+                        <input type="range" id="grid-size" min="2" max="60" value="16">
+                    </div>
+                </section>
+
+                <section class="panel-section">
+                    <h2>Tools</h2>
+                    <div class="tool-group">
+                        <button id="tool-brush" class="tool-btn active"
+                            title="Brush (Left Click to draw, Alt+Click to erase)">
+                            <span class="material-icons-rounded">brush</span>
+                            <span>Brush</span>
+                        </button>
+                        <button id="tool-hp" class="tool-btn" title="HP Tool (Click a block to select)">
+                            <span class="material-icons-rounded">healing</span>
+                            <span>HP Tool</span>
+                        </button>
+                        <button id="tool-picker" class="tool-btn" title="Color Picker (Pick from canvas)">
+                            <span class="material-icons-rounded">colorize</span>
+                            <span>Picker</span>
+                        </button>
+                    </div>
+
+                    <div id="hp-control-panel" class="control-group hidden">
+                        <label>Selected Block HP: <span id="block-hp-val">1</span></label>
+                        <input type="range" id="block-hp-slider" min="1" max="100" value="1">
+                        <div class="hint">Draw on block to set HP via tool, or adjust slider.</div>
+                    </div>
+                </section>
+
+                <section class="panel-section palette-section flex-grow">
+                    <h2>Color Palette</h2>
+                    <div class="color-actions">
+                        <input type="color" id="new-color-input" value="#ff3366">
+                        <button id="btn-add-color" class="btn secondary">Add Color</button>
+                    </div>
+                    <div id="palette-list" class="palette-list">
+                        <!-- Colors will be injected here -->
+                    </div>
+                </section>
+            </aside>
+
+            <!-- CENTER: Canvas -->
+            <section class="center-stage">
+                <div class="canvas-container glass-panel" id="canvas-wrapper">
+                    <canvas id="editor-canvas"></canvas>
+                </div>
+            </section>
+
+            <!-- RIGHT PANEL: Units -->
+            <aside class="panel right-panel glass-panel">
+                <section class="panel-section">
+                    <h2>Warehouse Units</h2>
+
+                    <div class="control-group">
+                        <label>Columns: <span id="unit-cols-val">3</span></label>
+                        <input type="range" id="unit-cols" min="1" max="10" value="3">
+                    </div>
+                    <div class="control-group">
+                        <label>Max Ammo per Unit: <span id="unit-max-ammo-val">5</span></label>
+                        <input type="range" id="unit-max-ammo" min="1" max="50" value="5">
+                    </div>
+
+                    <div class="button-row">
+                        <button id="btn-create-units" class="btn primary flex-grow">Create Units</button>
+                        <button id="btn-shuffle-units" class="btn secondary icon-only" title="Shuffle Units">
+                            <span class="material-icons-rounded">shuffle</span>
+                        </button>
+                    </div>
+
+                    <div id="unit-ammo-control" class="control-group hidden">
+                        <label>Selected Unit Ammo: <span id="unit-ammo-val">1</span></label>
+                        <input type="range" id="unit-ammo-slider" min="1" max="100" value="1">
+                    </div>
+                </section>
+
+                <section class="panel-section flex-grow">
+                    <div class="warehouse-grid-container">
+                        <div id="warehouse-columns" class="warehouse-columns">
+                            <!-- Columns will go here -->
+                        </div>
+                    </div>
+                </section>
+            </aside>
+        </main>
+
+        <!-- BOTTOM PANEL: JSON Export & Saves -->
+        <footer class="bottom-panel">
+            <!-- Saves Section -->
+            <div class="saves-section glass-panel">
+                <div class="section-header">
+                    <h2>Projects</h2>
+                    <div class="hint" id="login-hint">Log in to view cloud saves.</div>
+                </div>
+                <div class="saves-carousel" id="saves-carousel">
+                    <!-- Create New Card luôn luôn có -->
+                    <div class="save-card create-new" id="btn-save-project">
+                        <span class="material-icons-rounded">add_circle</span>
+                        <h3>Save Project</h3>
+                    </div>
+                    <!-- Existing saves injected here -->
+                </div>
+            </div>
+
+            <!-- JSON Section -->
+            <div class="json-section glass-panel">
+                <div class="section-header">
+                    <h2>JSON Output</h2>
+                    <div class="button-row">
+                        <button id="btn-generate-json" class="btn primary">Generate JSON</button>
+                        <button id="btn-copy-json" class="btn secondary">Copy</button>
+                    </div>
+                </div>
+                <textarea id="json-output" readonly placeholder="Click Generate JSON to see output here..."></textarea>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Script loading -->
+    <script type="module" src="firebase.js"></script>
+    <script type="module" src="script.js"></script>
+</body>
+
+</html>
