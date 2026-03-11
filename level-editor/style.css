@@ -70,6 +70,12 @@ header.navbar {
   color: #fff;
 }
 
+.app-icon {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
 .auth-section {
   display: flex;
   align-items: center;
@@ -391,6 +397,16 @@ body.alt-pressed canvas {
   cursor: not-allowed !important;
 }
 
+.floating-panel {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  padding: 16px 24px;
+  width: 300px;
+}
+
 /* WAREHOUSE UNITS */
 .warehouse-grid-container {
   display: flex;
@@ -437,6 +453,8 @@ body.alt-pressed canvas {
   border: 2px solid rgba(255, 255, 255, 0.8);
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
   transition: transform 0.1s;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .unit-circle:active {
@@ -450,9 +468,8 @@ body.alt-pressed canvas {
 }
 
 .unit-ghost {
-  background: transparent !important;
-  border: 2px dashed #fbbf24 !important;
-  color: transparent !important;
+  opacity: 0.5 !important;
+  border: 2px dashed #fff !important;
   box-shadow: none !important;
 }
 

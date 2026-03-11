@@ -100,10 +100,17 @@ function init() {
 
 function bindEvents() {
     window.addEventListener('keydown', (e) => {
-        if (e.key === 'Alt' || e.altKey) document.body.classList.add('alt-pressed');
+        if ((e.key === 'Alt' || e.altKey) && currentTool === 'brush') {
+            document.body.classList.add('alt-pressed');
+        }
     });
     window.addEventListener('keyup', (e) => {
-        if (e.key === 'Alt' || !e.altKey) document.body.classList.remove('alt-pressed');
+        if (e.key === 'Alt' || !e.altKey) {
+            document.body.classList.remove('alt-pressed');
+        }
+    });
+    window.addEventListener('blur', () => {
+        document.body.classList.remove('alt-pressed');
     });
 
     // Canvas Listeners
@@ -467,6 +474,10 @@ function setTool(tool) {
         isDraggingSelection = false;
     }
 
+    if (tool !== 'brush') {
+        document.body.classList.remove('alt-pressed');
+    }
+
     currentTool = tool;
     document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('tool-' + tool).classList.add('active');
@@ -674,6 +685,8 @@ function renderWarehouse() {
             dragClass: 'unit-drag',
             forceFallback: true,
             fallbackClass: 'unit-drag',
+            swapThreshold: 0.65,
+            emptyInsertThreshold: 5,
             onEnd: function (evt) {
                 const oldColIdx = parseInt(evt.from.dataset.colIndex);
                 const newColIdx = parseInt(evt.to.dataset.colIndex);
@@ -835,7 +848,7 @@ async function saveCurrentProject() {
     } catch (err) {
         // Fallback or log if rules prevent it
         console.error("Save error: check Firestore rules", err);
-        alert("Failed to save. Did you configure Firebase properly?");
+        alert("Failed to save. Make sure your Firebase Database is created and has rules allowing read/write (e.g., allow read, write: if request.auth != null;).");
     }
 }
 

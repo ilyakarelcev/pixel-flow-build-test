@@ -21,7 +21,7 @@
         <!-- TOP NAVBAR -->
         <header class="navbar glass-panel">
             <div class="logo">
-                <span class="material-icons-rounded">view_quilt</span>
+                <img src="icon.png" class="app-icon" alt="Icon">
                 <h1>Pixel Flow Build</h1>
             </div>
 
@@ -71,12 +71,6 @@
                             <span>Picker</span>
                         </button>
                     </div>
-
-                    <div id="hp-control-panel" class="control-group hidden">
-                        <label>Selected Block HP: <span id="block-hp-val">1</span></label>
-                        <input type="range" id="block-hp-slider" min="1" max="100" value="1">
-                        <div class="hint">Draw on block to set HP via tool, or adjust slider.</div>
-                    </div>
                 </section>
 
                 <section class="panel-section palette-section flex-grow">
@@ -100,6 +94,13 @@
                         <button id="btn-zoom-out" class="btn secondary icon-only" title="Zoom Out"><i
                                 class="material-icons">remove</i></button>
                     </div>
+
+                    <div id="hp-control-panel" class="floating-panel hidden glass-panel">
+                        <label>Selected Block HP: <span id="block-hp-val">1</span></label>
+                        <input type="range" id="block-hp-slider" min="1" max="100" value="1">
+                        <div class="hint">Adjust the slider to set HP for the selected block.</div>
+                    </div>
+
                     <canvas id="editor-canvas"></canvas>
                 </div>
             </section>
