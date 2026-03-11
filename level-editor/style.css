@@ -330,7 +330,7 @@ input[type="range"] {
 .compact-palette-panel {
   display: flex;
   flex-direction: column;
-  width: 72px; /* Sufficient for 2 columns of small swatches */
+  width: 86px; /* Increased to 86px */
   flex-shrink: 0;
   padding: 12px 6px;
   gap: 16px;
@@ -531,8 +531,8 @@ input[type="range"] {
   overflow: auto;
   padding: 48px 24px 24px 24px;
   position: relative;
-  flex: none; /* Don't flex since we have fixed height */
-  width: 100%;
+  flex: 1; /* Changed back to flex: 1 to respect layout boundaries */
+  min-width: 0;
 }
 
 .zoom-controls {
