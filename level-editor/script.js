@@ -10,6 +10,7 @@ const state = {
     ],
     nextColorId: 3,
     blocks: new Map(), // key: "x,y", value: { col: id, hp: int }
+    keys: new Map(), // key: "x,y", value: { w: 1, h: 1 }
     warehouseColumns: [], // Array mapping to UI
     unitMaxAmmo: 20,
     unitColsCount: 3,
@@ -24,6 +25,7 @@ let isDrawing = false;
 let drawMode = 'draw'; // 'draw' or 'erase' (alt pressed)
 
 let selectedBlocks = []; // array of {x, y}
+let selectedKeys = []; // array of {x, y}
 let marqueeStartCoords = null;
 let currentMouseCoords = null;
 let isDraggingSelection = false;
@@ -63,10 +65,16 @@ const elements = {
     newColorInput: document.getElementById('new-color-input'),
     btnAddColor: document.getElementById('btn-add-color'),
 
-    // HP Tool
+    // HP Tool / Key Tool
     hpPanel: document.getElementById('hp-control-panel'),
+    blockHpContainer: document.getElementById('block-hp-container'),
     hpSlider: document.getElementById('block-hp-slider'),
     hpVal: document.getElementById('block-hp-val'),
+    keySizeContainer: document.getElementById('key-size-container'),
+    keyWSlider: document.getElementById('key-w-slider'),
+    keyWVal: document.getElementById('key-w-val'),
+    keyHSlider: document.getElementById('key-h-slider'),
+    keyHVal: document.getElementById('key-h-val'),
 
     // Units
     unitColsSlider: document.getElementById('unit-cols'),
@@ -81,6 +89,8 @@ const elements = {
     unitAmmoControl: document.getElementById('unit-ammo-control'),
     unitAmmoSlider: document.getElementById('unit-ammo-slider'),
     unitAmmoVal: document.getElementById('unit-ammo-val'),
+    unitIsHidden: document.getElementById('unit-is-hidden'),
+    unitIsBarnLock: document.getElementById('unit-is-barn-lock'),
     unitLinksControl: document.getElementById('unit-links-control'),
     unitLinksList: document.getElementById('unit-links-list'),
 
@@ -175,6 +185,30 @@ function bindEvents() {
         }
     });
 
+    elements.keyWSlider.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value);
+        elements.keyWVal.textContent = val;
+        if (currentTool === 'select' && selectedKeys.length > 0) {
+            selectedKeys.forEach(pos => {
+                let k = state.keys.get(`${pos.x},${pos.y}`);
+                if (k) k.w = val;
+            });
+            renderCanvas();
+        }
+    });
+
+    elements.keyHSlider.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value);
+        elements.keyHVal.textContent = val;
+        if (currentTool === 'select' && selectedKeys.length > 0) {
+            selectedKeys.forEach(pos => {
+                let k = state.keys.get(`${pos.x},${pos.y}`);
+                if (k) k.h = val;
+            });
+            renderCanvas();
+        }
+    });
+
     // Palette
     elements.btnAddColor.addEventListener('click', () => {
         const hex = elements.newColorInput.value;
@@ -225,6 +259,26 @@ function bindEvents() {
                 state.warehouseColumns[colIndex][unitIndex].ammo = parseInt(e.target.value);
                 renderWarehouse();
                 updatePaletteStats();
+            }
+        }
+    });
+
+    elements.unitIsHidden.addEventListener('change', (e) => {
+        if (selectedUnitInfo) {
+            const { colIndex, unitIndex } = selectedUnitInfo;
+            if (state.warehouseColumns[colIndex] && state.warehouseColumns[colIndex][unitIndex]) {
+                state.warehouseColumns[colIndex][unitIndex].IsHidden = e.target.checked;
+                renderWarehouse();
+            }
+        }
+    });
+
+    elements.unitIsBarnLock.addEventListener('change', (e) => {
+        if (selectedUnitInfo) {
+            const { colIndex, unitIndex } = selectedUnitInfo;
+            if (state.warehouseColumns[colIndex] && state.warehouseColumns[colIndex][unitIndex]) {
+                state.warehouseColumns[colIndex][unitIndex].IsBarnLock = e.target.checked;
+                renderWarehouse();
             }
         }
     });
@@ -281,27 +335,37 @@ function onCanvasMouseDown(e) {
     }
 
     if (currentTool === 'select') {
-        let clickedOnSelected = selectedBlocks.find(p => p.x === coords.x && p.y === coords.y);
+        let clickedOnSelectedBlock = selectedBlocks.find(p => p.x === coords.x && p.y === coords.y);
+        let clickedOnSelectedKey = selectedKeys.find(p => p.x === coords.x && p.y === coords.y);
 
         // Single block click handling with modifiers
         if (e.shiftKey) {
-            if (!clickedOnSelected) selectedBlocks.push({ x: coords.x, y: coords.y });
+            if (!clickedOnSelectedBlock && state.blocks.has(`${coords.x},${coords.y}`)) selectedBlocks.push({ x: coords.x, y: coords.y });
+            if (!clickedOnSelectedKey && state.keys.has(`${coords.x},${coords.y}`)) selectedKeys.push({ x: coords.x, y: coords.y });
             isDraggingSelection = false;
         } else if (e.altKey) {
             selectedBlocks = selectedBlocks.filter(p => p.x !== coords.x || p.y !== coords.y);
+            selectedKeys = selectedKeys.filter(p => p.x !== coords.x || p.y !== coords.y);
             isDraggingSelection = false;
         } else {
             // Normal click
-            if (clickedOnSelected) {
+            if (clickedOnSelectedBlock || clickedOnSelectedKey) {
                 isDraggingSelection = true;
                 dragStartCoords = coords;
             } else {
                 if (state.blocks.has(`${coords.x},${coords.y}`)) {
                     selectedBlocks = [{ x: coords.x, y: coords.y }];
+                    selectedKeys = [];
+                    isDraggingSelection = true;
+                    dragStartCoords = coords;
+                } else if (state.keys.has(`${coords.x},${coords.y}`)) {
+                    selectedKeys = [{ x: coords.x, y: coords.y }];
+                    selectedBlocks = [];
                     isDraggingSelection = true;
                     dragStartCoords = coords;
                 } else {
                     selectedBlocks = [];
+                    selectedKeys = [];
                     marqueeStartCoords = coords;
                     currentMouseCoords = coords;
                 }
@@ -319,11 +383,17 @@ function onCanvasMouseDown(e) {
     }
 
     if (currentTool === 'picker') {
-        const key = `${coords.x},${coords.y}`;
-        const b = state.blocks.get(key);
+        const keyStr = `${coords.x},${coords.y}`;
+        const b = state.blocks.get(keyStr);
+        const k = state.keys.get(keyStr);
+
         if (b) {
             selectedColorId = b.col;
             elements.newColorInput.value = state.colors.find(c => c.id === selectedColorId).hex;
+            setTool('brush');
+            renderPalette();
+        } else if (k) {
+            selectedColorId = 'key';
             setTool('brush');
             renderPalette();
         } else {
@@ -404,6 +474,21 @@ function onCanvasMouseUp(e) {
                     }
                 });
                 selectedBlocks = newBlocksObj.map(obj => obj.newPos).filter(p => p.x >= 0 && p.x < state.gridSize && p.y >= 0 && p.y < state.gridSize);
+
+                let newKeysObj = [];
+                selectedKeys.forEach(pos => {
+                    const key = `${pos.x},${pos.y}`;
+                    const k = state.keys.get(key);
+                    if (k) newKeysObj.push({ oldPos: pos, newPos: { x: pos.x + dx, y: pos.y + dy }, k: k });
+                });
+                newKeysObj.forEach(obj => state.keys.delete(`${obj.oldPos.x},${obj.oldPos.y}`));
+                newKeysObj.forEach(obj => {
+                    if (obj.newPos.x >= 0 && obj.newPos.x < state.gridSize && obj.newPos.y >= 0 && obj.newPos.y < state.gridSize) {
+                        state.keys.set(`${obj.newPos.x},${obj.newPos.y}`, obj.k);
+                    }
+                });
+                selectedKeys = newKeysObj.map(obj => obj.newPos).filter(p => p.x >= 0 && p.x < state.gridSize && p.y >= 0 && p.y < state.gridSize);
+
                 updatePaletteStats();
             }
             isDraggingSelection = false;
@@ -415,10 +500,17 @@ function onCanvasMouseUp(e) {
             let minY = Math.min(marqueeStartCoords.y, currentMouseCoords.y);
             let maxY = Math.max(marqueeStartCoords.y, currentMouseCoords.y);
             let newSelection = [];
+            let newKeysSelection = [];
             state.blocks.forEach((val, key) => {
                 const [bx, by] = key.split(',').map(Number);
                 if (bx >= minX && bx <= maxX && by >= minY && by <= maxY) {
                     newSelection.push({ x: bx, y: by });
+                }
+            });
+            state.keys.forEach((val, key) => {
+                const [kx, ky] = key.split(',').map(Number);
+                if (kx >= minX && kx <= maxX && ky >= minY && ky <= maxY) {
+                    newKeysSelection.push({ x: kx, y: ky });
                 }
             });
 
@@ -426,27 +518,65 @@ function onCanvasMouseUp(e) {
                 newSelection.forEach(np => {
                     if (!selectedBlocks.find(p => p.x === np.x && p.y === np.y)) selectedBlocks.push(np);
                 });
+                newKeysSelection.forEach(np => {
+                    if (!selectedKeys.find(p => p.x === np.x && p.y === np.y)) selectedKeys.push(np);
+                });
             } else if (e.altKey) {
                 selectedBlocks = selectedBlocks.filter(p => {
-                    return !newSelection.find(np => np.x === p.x && np.y === p.y);
+                    return !newSelection.find(np => np.x === p.x && p.y === np.y);
+                });
+                selectedKeys = selectedKeys.filter(p => {
+                    return !newKeysSelection.find(np => np.x === p.x && p.y === np.y);
                 });
             } else {
                 selectedBlocks = newSelection;
+                selectedKeys = newKeysSelection;
             }
 
             marqueeStartCoords = null;
             currentMouseCoords = null;
 
-            if (selectedBlocks.length > 0) {
-                elements.hpPanel.classList.remove('hidden');
-            } else {
-                elements.hpPanel.classList.add('hidden');
+            function showControlPanels() {
+                if (selectedBlocks.length > 0 || selectedKeys.length > 0) {
+                    elements.hpPanel.classList.remove('hidden');
+                    if (selectedKeys.length > 0) {
+                        elements.blockHpContainer.classList.add('hidden');
+                        elements.keySizeContainer.classList.remove('hidden');
+                        let k = state.keys.get(`${selectedKeys[0].x},${selectedKeys[0].y}`);
+                        if (k) {
+                            elements.keyWSlider.value = k.w;
+                            elements.keyWVal.textContent = k.w;
+                            elements.keyHSlider.value = k.h;
+                            elements.keyHVal.textContent = k.h;
+                        }
+                    } else {
+                        elements.keySizeContainer.classList.add('hidden');
+                        elements.blockHpContainer.classList.remove('hidden');
+                    }
+                } else {
+                    elements.hpPanel.classList.add('hidden');
+                }
             }
 
+            showControlPanels();
             renderCanvas();
         } else {
-            if (selectedBlocks.length > 0 && !e.shiftKey && !e.altKey) {
+            if ((selectedBlocks.length > 0 || selectedKeys.length > 0) && !e.shiftKey && !e.altKey) {
                 elements.hpPanel.classList.remove('hidden');
+                if (selectedKeys.length > 0) {
+                    elements.blockHpContainer.classList.add('hidden');
+                    elements.keySizeContainer.classList.remove('hidden');
+                    let k = state.keys.get(`${selectedKeys[0].x},${selectedKeys[0].y}`);
+                    if (k) {
+                        elements.keyWSlider.value = k.w;
+                        elements.keyWVal.textContent = k.w;
+                        elements.keyHSlider.value = k.h;
+                        elements.keyHVal.textContent = k.h;
+                    }
+                } else {
+                    elements.keySizeContainer.classList.add('hidden');
+                    elements.blockHpContainer.classList.remove('hidden');
+                }
             }
         }
         return;
@@ -478,6 +608,16 @@ function trimBlocks() {
         }
     });
     toDelete.forEach(k => state.blocks.delete(k));
+
+    let toDeleteKeys = [];
+    state.keys.forEach((val, key) => {
+        const [x, y] = key.split(',').map(Number);
+        if (x >= state.gridSize || y >= state.gridSize) {
+            toDeleteKeys.push(key);
+        }
+    });
+    toDeleteKeys.forEach(k => state.keys.delete(k));
+
     updatePaletteStats();
 }
 
@@ -554,6 +694,58 @@ function renderCanvas() {
         if (isSelected) drawBlock(b, key, isSelected);
     });
 
+    // Draw Keys
+    const drawKeyObj = (k, keyStr, isSelected) => {
+        const [x, y] = keyStr.split(',').map(Number);
+        let drawX = x;
+        let drawY = y;
+
+        if (isSelected && currentTool === 'select' && isDraggingSelection) {
+            drawX += selectionDragVisualOffset.dx;
+            drawY += selectionDragVisualOffset.dy;
+        }
+
+        const pxX = drawX * cs;
+        // Invert Y: anchor is at (drawY). It spans from (drawY) upwards to (drawY + h - 1).
+        // The top pixel equivalent is (s - 1 - (drawY + k.h - 1)) * cs
+        const pxY = (s - 1 - (drawY + Math.max(1, k.h) - 1)) * cs;
+        const widthPx = Math.max(1, k.w) * cs;
+        const heightPx = Math.max(1, k.h) * cs;
+
+        ctx.fillStyle = 'rgba(251, 191, 36, 0.3)'; // Tint for the key background
+        ctx.fillRect(pxX, pxY, widthPx, heightPx);
+
+        if (isSelected && currentTool === 'select' && !isDraggingSelection) {
+            ctx.strokeStyle = '#fbbf24';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(pxX + 1.5, pxY + 1.5, widthPx - 3, heightPx - 3);
+        } else {
+            ctx.strokeStyle = '#fbbf24';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([4, 4]);
+            ctx.strokeRect(pxX + 1, pxY + 1, widthPx - 2, heightPx - 2);
+            ctx.setLineDash([]);
+        }
+
+        ctx.font = `${Math.min(widthPx, heightPx) * 0.5}px sans-serif`;
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText("🗝️", pxX + widthPx / 2, pxY + heightPx / 2);
+    };
+
+    state.keys.forEach((k, keyStr) => {
+        const [x, y] = keyStr.split(',').map(Number);
+        const isSelected = selectedKeys.find(p => p.x === x && p.y === y) !== undefined;
+        if (!isSelected) drawKeyObj(k, keyStr, isSelected);
+    });
+
+    state.keys.forEach((k, keyStr) => {
+        const [x, y] = keyStr.split(',').map(Number);
+        const isSelected = selectedKeys.find(p => p.x === x && p.y === y) !== undefined;
+        if (isSelected) drawKeyObj(k, keyStr, isSelected);
+    });
+
     // Draw Marquee Array Selection Box
     if (marqueeStartCoords && currentMouseCoords && currentTool === 'select') {
         let minX = Math.min(marqueeStartCoords.x, currentMouseCoords.x);
@@ -576,6 +768,7 @@ function renderCanvas() {
 function setTool(tool) {
     if (currentTool === 'select') {
         selectedBlocks = [];
+        selectedKeys = [];
         marqueeStartCoords = null;
         isDraggingSelection = false;
     }
@@ -593,7 +786,7 @@ function setTool(tool) {
         elements.hpPanel.classList.add('hidden');
     }
 
-    if (tool === 'select' && selectedBlocks.length > 0) {
+    if (tool === 'select' && (selectedBlocks.length > 0 || selectedKeys.length > 0)) {
         elements.hpPanel.classList.remove('hidden');
     }
 
@@ -644,6 +837,32 @@ function renderPalette() {
 
         elements.paletteList.appendChild(el);
     });
+
+    // Draw keys palette item
+    let isBarnLockCount = 0;
+    state.warehouseColumns.forEach(col => col.forEach(u => { if (u.IsBarnLock) isBarnLockCount++; }));
+    let keysCount = state.keys.size;
+    let locksDiff = isBarnLockCount - keysCount;
+    let locksDiffStr = locksDiff > 0 ? `+${locksDiff}` : String(locksDiff);
+    let locksDiffClass = locksDiff > 0 ? 'diff-positive' : (locksDiff < 0 ? 'diff-negative' : 'diff-zero');
+
+    const keyEl = document.createElement('div');
+    keyEl.className = `palette-item ${selectedColorId === 'key' ? 'selected' : ''}`;
+    keyEl.innerHTML = `
+        <div class="palette-color-preview" style="background-color: rgba(251, 191, 36, 0.5); border-radius: 4px; display: flex; align-items: center; justify-content: center; position: relative;">
+          <span style="font-size: 14px;">🗝️</span>
+        </div>
+        <div class="palette-info">
+            <span>Keys</span>
+            <span class="palette-diff ${locksDiffClass}">${locksDiffStr}</span>
+        </div>
+        <button class="btn-delete-color material-icons-rounded" style="visibility:hidden">delete</button>
+    `;
+    keyEl.addEventListener('click', () => {
+        selectedColorId = 'key';
+        renderPalette();
+    });
+    elements.paletteList.appendChild(keyEl);
 }
 
 function updatePaletteStats() {
@@ -705,7 +924,7 @@ function createUnits() {
         let totalHp = hpStats[c.id];
         while (totalHp > 0) {
             let ammo = Math.min(state.unitMaxAmmo, totalHp);
-            allNewUnits.push({ id: `u_${unitIdCounter++}`, col: c.id, ammo: ammo, Lnk: [] });
+            allNewUnits.push({ id: `u_${unitIdCounter++}`, col: c.id, ammo: ammo, Lnk: [], IsHidden: false, IsBarnLock: false });
             totalHp -= ammo;
         }
     });
@@ -756,10 +975,21 @@ function renderWarehouse(isDraggingPass = false) {
             const unitEl = document.createElement('div');
             unitEl.className = 'unit-circle';
             unitEl.style.backgroundColor = uHex;
-            unitEl.textContent = unitData.ammo;
+            
+            if (unitData.IsBarnLock) {
+                unitEl.classList.add('is-barn-lock');
+                unitEl.innerHTML = '<span class="material-icons-rounded" style="font-size: 20px;">lock</span>';
+            } else {
+                unitEl.textContent = unitData.ammo;
+            }
+
+            if (unitData.IsHidden) {
+                unitEl.classList.add('is-hidden');
+            }
 
             unitEl.dataset.colIndex = colIndex;
             unitEl.dataset.unitIndex = unitIndex;
+            unitEl.dataset.id = unitData.id;
 
             if (!isDraggingPass && selectedUnitInfo && selectedUnitInfo.colIndex === colIndex && selectedUnitInfo.unitIndex === unitIndex) {
                 unitEl.classList.add('selected-unit');
@@ -920,6 +1150,8 @@ function onUnitPointerUp(e) {
         elements.unitAmmoControl.classList.remove('hidden');
         elements.unitAmmoSlider.value = draggedUnitInfo.data.ammo;
         elements.unitAmmoVal.textContent = draggedUnitInfo.data.ammo;
+        elements.unitIsHidden.checked = draggedUnitInfo.data.IsHidden || false;
+        elements.unitIsBarnLock.checked = draggedUnitInfo.data.IsBarnLock || false;
         updateUnitLinksPanel();
     } else {
         selectedUnitInfo = {
@@ -929,6 +1161,8 @@ function onUnitPointerUp(e) {
         elements.unitAmmoControl.classList.remove('hidden');
         elements.unitAmmoSlider.value = draggedUnitInfo.data.ammo;
         elements.unitAmmoVal.textContent = draggedUnitInfo.data.ammo;
+        elements.unitIsHidden.checked = draggedUnitInfo.data.IsHidden || false;
+        elements.unitIsBarnLock.checked = draggedUnitInfo.data.IsBarnLock || false;
         updatePaletteStats(); // Also update counts across columns in case we need
         updateUnitLinksPanel();
     }
@@ -971,18 +1205,18 @@ function onLinkPointerUp(e) {
     document.removeEventListener('pointermove', onLinkPointerMove);
     document.removeEventListener('pointerup', onLinkPointerUp);
     
-    // Check if pointer is over another unit
-    // elementsFromPoint isn't needed if pointer-events:none on SVG, which we have.
     const elementBehind = document.elementFromPoint(e.clientX, e.clientY);
     const targetEl = elementBehind ? elementBehind.closest('.unit-circle') : null;
     
     if (targetEl && targetEl !== linkStartUnit.el) {
         const tCol = parseInt(targetEl.dataset.colIndex);
         const tUnit = parseInt(targetEl.dataset.unitIndex);
+        const targetUnitData = state.warehouseColumns[tCol][tUnit];
         
-        const existing = linkStartUnit.data.Lnk.find(l => l.x === tCol && l.y === tUnit);
-        if (!existing) {
-            linkStartUnit.data.Lnk.push({ x: tCol, y: tUnit });
+        const existing = linkStartUnit.data.Lnk.includes(targetUnitData.id);
+        if (!existing && linkStartUnit.data.Lnk.length < 2 && targetUnitData.Lnk.length < 2) {
+            linkStartUnit.data.Lnk.push(targetUnitData.id);
+            targetUnitData.Lnk.push(linkStartUnit.data.id);
             renderWarehouse();
             
             if (selectedUnitInfo && selectedUnitInfo.colIndex === linkStartUnit.colIndex && selectedUnitInfo.unitIndex === linkStartUnit.unitIndex) {
@@ -1002,24 +1236,29 @@ function drawLinks() {
     // Cache positions
     const posMap = new Map();
     document.querySelectorAll('.unit-circle').forEach(el => {
-        const c = el.dataset.colIndex;
-        const u = el.dataset.unitIndex;
+        const id = el.dataset.id;
         const r = el.getBoundingClientRect();
-        posMap.set(`${c}_${u}`, {
+        posMap.set(id, {
             x: r.left + r.width / 2 - svgRect.left,
             y: r.top + r.height / 2 - svgRect.top
         });
     });
 
+    const drawnPairs = new Set();
+
     state.warehouseColumns.forEach((colData, colIndex) => {
         colData.forEach((unitData, unitIndex) => {
             if (!unitData.Lnk || unitData.Lnk.length === 0) return;
-            const startPos = posMap.get(`${colIndex}_${unitIndex}`);
+            const startPos = posMap.get(unitData.id);
             if (!startPos) return;
             
-            unitData.Lnk.forEach(lnk => {
-                const endPos = posMap.get(`${lnk.x}_${lnk.y}`);
-                if (!endPos) return; // Target moved/deleted and not available
+            unitData.Lnk.forEach(targetId => {
+                const pairKey = [unitData.id, targetId].sort().join('-');
+                if (drawnPairs.has(pairKey)) return;
+                drawnPairs.add(pairKey);
+
+                const endPos = posMap.get(targetId);
+                if (!endPos) return; // Target deleted
                 
                 const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
                 line.setAttribute('x1', startPos.x);
@@ -1042,10 +1281,20 @@ function updateUnitLinksPanel() {
     const unit = state.warehouseColumns[colIndex][unitIndex];
     if (!unit || !unit.Lnk) return;
     
-    unit.Lnk.forEach((lnk, idx) => {
+    unit.Lnk.forEach((targetId) => {
+        let targetCol = -1, targetRow = -1;
+        for (let c = 0; c < state.warehouseColumns.length; c++) {
+            const rowIdx = state.warehouseColumns[c].findIndex(u => u.id === targetId);
+            if (rowIdx !== -1) {
+                targetCol = c;
+                targetRow = rowIdx;
+                break;
+            }
+        }
+
         const badge = document.createElement('div');
         badge.className = 'link-badge';
-        badge.innerHTML = `Col: ${lnk.x}, Row: ${lnk.y} <i class="material-icons" style="font-size:14px; cursor:pointer;" title="Remove">close</i>`;
+        badge.innerHTML = `Col: ${targetCol}, Row: ${targetRow} <i class="material-icons" style="font-size:14px; cursor:pointer;" title="Remove">close</i>`;
         
         badge.style.display = 'flex';
         badge.style.alignItems = 'center';
@@ -1056,7 +1305,11 @@ function updateUnitLinksPanel() {
         badge.style.fontSize = '0.8rem';
         
         badge.querySelector('i').addEventListener('click', () => {
-            unit.Lnk.splice(idx, 1);
+            unit.Lnk = unit.Lnk.filter(id => id !== targetId);
+            if (targetCol !== -1 && targetRow !== -1) {
+                const targetU = state.warehouseColumns[targetCol][targetRow];
+                targetU.Lnk = targetU.Lnk.filter(id => id !== unit.id);
+            }
             updateUnitLinksPanel();
             renderWarehouse();
         });
@@ -1088,16 +1341,40 @@ function buildJSONString() {
         });
     });
 
+    // Process keys map into array
+    let keysArr = [];
+    state.keys.forEach((val, key) => {
+        const [x, y] = key.split(',').map(Number);
+        keysArr.push({
+            "Pos": { "x": x, "y": y },
+            "Size": { "x": val.w, "y": val.h }
+        });
+    });
+
+    let idToCoords = {};
+    state.warehouseColumns.forEach((colData, cIdx) => {
+        colData.forEach((u, uIdx) => {
+            idToCoords[u.id] = { x: cIdx, y: uIdx };
+        });
+    });
+
     let wbArr = [];
     state.warehouseColumns.forEach((colData, xIdx) => {
         let Units = [];
         colData.forEach((u, yIdx) => {
+            let mappedLnk = [];
+            if (u.Lnk) {
+                u.Lnk.forEach(targetId => {
+                    if (idToCoords[targetId]) mappedLnk.push(idToCoords[targetId]);
+                });
+            }
+
             Units.push({
                 "Col": u.col,
                 "Ammo": u.ammo,
-                "IsHidden": false,
-                "IsBarnLock": false,
-                "Lnk": u.Lnk || [] // Include links
+                "IsHidden": u.IsHidden || false,
+                "IsBarnLock": u.IsBarnLock || false,
+                "Lnk": mappedLnk // Include links
             });
         });
         wbArr.push({ "Units": Units });
@@ -1128,7 +1405,7 @@ function buildJSONString() {
         GridSize: { x: state.gridSize, y: state.gridSize },
         Colors: finalColors,
         Blocks: blocksArr,
-        Keys: [],
+        Keys: keysArr,
         WarehouseColumns: wbArr
     };
 
@@ -1271,18 +1548,49 @@ window.openJson = function (b64json) {
             });
         }
 
+        // Keys
+        state.keys = new Map();
+        if (data.Keys) {
+            data.Keys.forEach(k => {
+                state.keys.set(`${k.Pos.x},${k.Pos.y}`, { w: k.Size?.x || 1, h: k.Size?.y || 1 });
+            });
+        }
+
         // 4. Warehouse Columns
+        let unitIdCounter = 0;
         state.warehouseColumns = [];
         if (data.WarehouseColumns) {
             data.WarehouseColumns.forEach((colData) => {
                 let col = [];
                 if (colData.Units) {
                     colData.Units.forEach(u => {
-                        col.push({ col: u.Col, ammo: u.Ammo || 1, Lnk: u.Lnk || [] });
+                        col.push({ 
+                            id: `u_${unitIdCounter++}`,
+                            col: u.Col, 
+                            ammo: u.Ammo || 1, 
+                            IsHidden: u.IsHidden || false, 
+                            IsBarnLock: u.IsBarnLock || false, 
+                            _tmpLnk: u.Lnk || [] 
+                        });
                     });
                 }
                 state.warehouseColumns.push(col);
             });
+
+            // Map _tmpLnk to IDs
+            state.warehouseColumns.forEach((colData, cIdx) => {
+                colData.forEach((u) => {
+                    let idLnk = [];
+                    u._tmpLnk.forEach(pos => {
+                        if (state.warehouseColumns[pos.x] && state.warehouseColumns[pos.x][pos.y]) {
+                            idLnk.push(state.warehouseColumns[pos.x][pos.y].id);
+                        }
+                    });
+                    u.Lnk = idLnk;
+                    delete u._tmpLnk;
+                });
+            });
+
             state.unitColsCount = Math.max(1, state.warehouseColumns.length);
             elements.unitColsSlider.value = state.unitColsCount;
             elements.unitColsVal.textContent = state.unitColsCount;

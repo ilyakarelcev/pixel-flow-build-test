@@ -96,8 +96,16 @@
                     </div>
 
                     <div id="hp-control-panel" class="floating-panel hidden glass-panel">
-                        <label>Selected Block HP: <span id="block-hp-val">1</span></label>
-                        <input type="range" id="block-hp-slider" min="1" max="100" value="1">
+                        <div id="block-hp-container">
+                            <label>Selected Item HP: <span id="block-hp-val">1</span></label>
+                            <input type="range" id="block-hp-slider" min="1" max="100" value="1">
+                        </div>
+                        <div id="key-size-container" class="hidden" style="margin-top: 8px;">
+                            <label>Key Width: <span id="key-w-val">1</span></label>
+                            <input type="range" id="key-w-slider" min="1" max="10" value="1">
+                            <label style="margin-top: 4px;">Key Height: <span id="key-h-val">1</span></label>
+                            <input type="range" id="key-h-slider" min="1" max="10" value="1">
+                        </div>
                     </div>
 
                     <canvas id="editor-canvas"></canvas>
@@ -131,6 +139,18 @@
                     <div id="unit-ammo-control" class="control-group hidden">
                         <label>Selected Unit Ammo: <span id="unit-ammo-val">1</span></label>
                         <input type="range" id="unit-ammo-slider" min="1" max="100" value="1">
+
+                        <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 12px; margin-bottom: 4px;">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-color);">
+                                <input type="checkbox" id="unit-is-hidden" style="width: 16px; height: 16px; accent-color: var(--primary-color);">
+                                <span style="font-size: 0.9rem;">Is Hidden</span>
+                            </label>
+                            
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-color);">
+                                <input type="checkbox" id="unit-is-barn-lock" style="width: 16px; height: 16px; accent-color: var(--primary-color);">
+                                <span style="font-size: 0.9rem;">Is Barn Lock</span>
+                            </label>
+                        </div>
                         
                         <div id="unit-links-control" class="control-group" style="margin-top: 8px;">
                             <label>Links:</label>

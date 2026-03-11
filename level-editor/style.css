@@ -466,8 +466,24 @@ body.alt-pressed canvas {
 }
 
 .unit-circle.selected-unit {
-  border: 3px solid #fbbf24;
+  border: 4px solid #fbbf24;
   transform: scale(1.1);
+}
+
+.unit-circle.is-hidden {
+  border: 4px dashed rgba(255, 255, 255, 1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.8), inset 0 0 12px rgba(0, 0, 0, 0.9);
+  opacity: 0.75;
+}
+
+.unit-circle.is-barn-lock {
+  background-color: #334155 !important;
+  border: 2px solid #94a3b8;
+  color: #f8fafc;
+}
+
+.unit-circle.is-barn-lock.is-hidden {
+  border: 4px dashed #94a3b8;
 }
 
 .unit-ghost {
