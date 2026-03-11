@@ -98,6 +98,7 @@ const elements = {
     jsonOutput: document.getElementById('json-output'),
     btnGenerateJson: document.getElementById('btn-generate-json'),
     btnCopyJson: document.getElementById('btn-copy-json'),
+    btnLoadJson: document.getElementById('btn-load-json'),
 
     // Saves
     savesCarousel: document.getElementById('saves-carousel'),
@@ -289,6 +290,17 @@ function bindEvents() {
         navigator.clipboard.writeText(elements.jsonOutput.value);
         elements.btnCopyJson.textContent = "Copied!";
         setTimeout(() => elements.btnCopyJson.textContent = "Copy", 2000);
+    });
+    elements.btnLoadJson.addEventListener('click', () => {
+        try {
+            const dataStr = elements.jsonOutput.value;
+            if (!dataStr.trim()) return;
+            loadFromJsonString(dataStr);
+            alert("JSON Loaded successfully!");
+        } catch (e) {
+            console.error("Load JSON from input error", e);
+            alert("Failed to parse JSON. Please check if the format is correct.");
+        }
     });
 
     // Auth & Saves
@@ -1527,101 +1539,105 @@ window.openJson = function (b64json) {
     try {
         const decoded = decodeURIComponent(atob(b64json));
         elements.jsonOutput.value = decoded;
-        const data = JSON.parse(decoded);
-
-        // 1. Grid Size
-        state.gridSize = data.GridSize.x || 16;
-        elements.gridSizeSlider.value = state.gridSize;
-        elements.gridSizeVal.textContent = state.gridSize;
-
-        // 2. Colors
-        if (data.Colors) {
-            state.colors = data.Colors.map((c, i) => ({ id: i, hex: rgbToHex(c.r, c.g, c.b) }));
-            state.nextColorId = state.colors.length > 0 ? state.colors.length : 1;
-        }
-
-        // 3. Blocks
-        state.blocks = new Map();
-        if (data.Blocks) {
-            data.Blocks.forEach(b => {
-                state.blocks.set(`${b.Pos.x},${b.Pos.y}`, { col: b.Col, hp: b.HP || 1 });
-            });
-        }
-
-        // Keys
-        state.keys = new Map();
-        if (data.Keys) {
-            data.Keys.forEach(k => {
-                state.keys.set(`${k.Pos.x},${k.Pos.y}`, { w: k.Size?.x || 1, h: k.Size?.y || 1 });
-            });
-        }
-
-        // 4. Warehouse Columns
-        let unitIdCounter = 0;
-        state.warehouseColumns = [];
-        if (data.WarehouseColumns) {
-            data.WarehouseColumns.forEach((colData) => {
-                let col = [];
-                if (colData.Units) {
-                    colData.Units.forEach(u => {
-                        col.push({ 
-                            id: `u_${unitIdCounter++}`,
-                            col: u.Col, 
-                            ammo: u.Ammo || 1, 
-                            IsHidden: u.IsHidden || false, 
-                            IsBarnLock: u.IsBarnLock || false, 
-                            _tmpLnk: u.Lnk || [] 
-                        });
-                    });
-                }
-                state.warehouseColumns.push(col);
-            });
-
-            // Map _tmpLnk to IDs
-            state.warehouseColumns.forEach((colData, cIdx) => {
-                colData.forEach((u) => {
-                    let idLnk = [];
-                    u._tmpLnk.forEach(pos => {
-                        if (state.warehouseColumns[pos.x] && state.warehouseColumns[pos.x][pos.y]) {
-                            idLnk.push(state.warehouseColumns[pos.x][pos.y].id);
-                        }
-                    });
-                    u.Lnk = idLnk;
-                    delete u._tmpLnk;
-                });
-            });
-
-            state.unitColsCount = Math.max(1, state.warehouseColumns.length);
-            elements.unitColsSlider.value = state.unitColsCount;
-            elements.unitColsVal.textContent = state.unitColsCount;
-        }
-
-        // Clean UI state
-        selectedBlocks = [];
-        selectedBlockPos = null;
-        selectedUnitInfo = null;
-        isDraggingSelection = false;
-        marqueeStartCoords = null;
-        elements.hpPanel.classList.add('hidden');
-        elements.unitAmmoControl.classList.add('hidden');
-
-        if (state.colors.length > 0) {
-            selectedColorId = state.colors[0].id;
-            elements.newColorInput.value = state.colors[0].hex;
-        }
-
-        // Render everything
-        resizeCanvas();
-        renderCanvas();
-        renderWarehouse();
-        renderPalette();
-
+        loadFromJsonString(decoded);
         alert("Project loaded successfully!");
     } catch (e) {
         console.error("Load JSON error", e);
         alert("Failed to parse or load JSON.");
     }
 };
+
+function loadFromJsonString(jsonString) {
+    const data = JSON.parse(jsonString);
+
+    // 1. Grid Size
+    state.gridSize = data.GridSize.x || 16;
+    elements.gridSizeSlider.value = state.gridSize;
+    elements.gridSizeVal.textContent = state.gridSize;
+
+    // 2. Colors
+    if (data.Colors) {
+        state.colors = data.Colors.map((c, i) => ({ id: i, hex: rgbToHex(c.r, c.g, c.b) }));
+        state.nextColorId = state.colors.length > 0 ? state.colors.length : 1;
+    }
+
+    // 3. Blocks
+    state.blocks = new Map();
+    if (data.Blocks) {
+        data.Blocks.forEach(b => {
+            state.blocks.set(`${b.Pos.x},${b.Pos.y}`, { col: b.Col, hp: b.HP || 1 });
+        });
+    }
+
+    // Keys
+    state.keys = new Map();
+    if (data.Keys) {
+        data.Keys.forEach(k => {
+            state.keys.set(`${k.Pos.x},${k.Pos.y}`, { w: k.Size?.x || 1, h: k.Size?.y || 1 });
+        });
+    }
+
+    // 4. Warehouse Columns
+    let unitIdCounter = 0;
+    state.warehouseColumns = [];
+    if (data.WarehouseColumns) {
+        data.WarehouseColumns.forEach((colData) => {
+            let col = [];
+            if (colData.Units) {
+                colData.Units.forEach(u => {
+                    col.push({ 
+                        id: `u_${unitIdCounter++}`,
+                        col: u.Col, 
+                        ammo: u.Ammo || 1, 
+                        IsHidden: u.IsHidden || false, 
+                        IsBarnLock: u.IsBarnLock || false, 
+                        _tmpLnk: u.Lnk || [] 
+                    });
+                });
+            }
+            state.warehouseColumns.push(col);
+        });
+
+        // Map _tmpLnk to IDs
+        state.warehouseColumns.forEach((colData, cIdx) => {
+            colData.forEach((u) => {
+                let idLnk = [];
+                u._tmpLnk.forEach(pos => {
+                    if (state.warehouseColumns[pos.x] && state.warehouseColumns[pos.x][pos.y]) {
+                        idLnk.push(state.warehouseColumns[pos.x][pos.y].id);
+                    }
+                });
+                u.Lnk = idLnk;
+                delete u._tmpLnk;
+            });
+        });
+
+        state.unitColsCount = Math.max(1, state.warehouseColumns.length);
+        elements.unitColsSlider.value = state.unitColsCount;
+        elements.unitColsVal.textContent = state.unitColsCount;
+    }
+
+    // Clean UI state
+    selectedBlocks = [];
+    selectedKeys = [];
+    selectedBlockPos = null;
+    selectedUnitInfo = null;
+    isDraggingSelection = false;
+    marqueeStartCoords = null;
+    elements.hpPanel.classList.add('hidden');
+    elements.unitAmmoControl.classList.add('hidden');
+
+    if (state.colors.length > 0) {
+        selectedColorId = state.colors[0].id;
+        elements.newColorInput.value = state.colors[0].hex;
+    }
+
+    // Render everything
+    resizeCanvas();
+    renderCanvas();
+    renderWarehouse();
+    renderPalette();
+}
 
 window.overwriteSave = async function (id) {
     if (!firebaseUser) return;
