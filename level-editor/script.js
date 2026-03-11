@@ -140,11 +140,20 @@ function bindEvents() {
     elements.btnZoomOut.addEventListener('click', () => { CELL_SIZE_PX = Math.max(8, CELL_SIZE_PX - 8); resizeCanvas(); renderCanvas(); });
 
     elements.hpSlider.addEventListener('input', (e) => {
-        elements.hpVal.textContent = e.target.value;
-        if (selectedBlockPos) {
+        const val = parseInt(e.target.value);
+        elements.hpVal.textContent = val;
+
+        if (currentTool === 'select' && selectedBlocks.length > 0) {
+            selectedBlocks.forEach(pos => {
+                let b = state.blocks.get(`${pos.x},${pos.y}`);
+                if (b) b.hp = val;
+            });
+            renderCanvas();
+            updatePaletteStats();
+        } else if (selectedBlockPos) {
             let b = state.blocks.get(`${selectedBlockPos.x},${selectedBlockPos.y}`);
             if (b) {
-                b.hp = parseInt(e.target.value);
+                b.hp = val;
                 renderCanvas();
                 updatePaletteStats();
             }
@@ -158,6 +167,17 @@ function bindEvents() {
         state.colors.push(newColor);
         selectedColorId = newColor.id;
         renderPalette();
+    });
+
+    // Make native picker dynamically update the active color!
+    elements.newColorInput.addEventListener('input', (e) => {
+        const c = state.colors.find(col => col.id === selectedColorId);
+        if (c) {
+            c.hex = e.target.value;
+            renderCanvas();
+            renderWarehouse();
+            updatePaletteStats();
+        }
     });
 
     // Units
@@ -240,14 +260,38 @@ function onCanvasMouseDown(e) {
 
     if (currentTool === 'select') {
         let clickedOnSelected = selectedBlocks.find(p => p.x === coords.x && p.y === coords.y);
-        if (clickedOnSelected) {
-            isDraggingSelection = true;
-            dragStartCoords = coords;
+
+        // Single block click handling with modifiers
+        if (e.shiftKey) {
+            if (!clickedOnSelected) selectedBlocks.push({ x: coords.x, y: coords.y });
+            isDraggingSelection = false;
+        } else if (e.altKey) {
+            selectedBlocks = selectedBlocks.filter(p => p.x !== coords.x || p.y !== coords.y);
+            isDraggingSelection = false;
         } else {
-            selectedBlocks = [];
+            // Normal click
+            if (clickedOnSelected) {
+                isDraggingSelection = true;
+                dragStartCoords = coords;
+            } else {
+                if (state.blocks.has(`${coords.x},${coords.y}`)) {
+                    selectedBlocks = [{ x: coords.x, y: coords.y }];
+                    isDraggingSelection = true;
+                    dragStartCoords = coords;
+                } else {
+                    selectedBlocks = [];
+                    marqueeStartCoords = coords;
+                    currentMouseCoords = coords;
+                }
+            }
+        }
+
+        // Setup marquee selection for drag even with modifiers if dragging empty space
+        if (!isDraggingSelection) {
             marqueeStartCoords = coords;
             currentMouseCoords = coords;
         }
+
         renderCanvas();
         return;
     }
@@ -257,6 +301,7 @@ function onCanvasMouseDown(e) {
         const b = state.blocks.get(key);
         if (b) {
             selectedColorId = b.col;
+            elements.newColorInput.value = state.colors.find(c => c.id === selectedColorId).hex;
             setTool('brush');
             renderPalette();
         } else {
@@ -266,7 +311,10 @@ function onCanvasMouseDown(e) {
             const imgData = elements.ctx.getImageData(px, py, 1, 1).data;
             const hex = rgbToHex(imgData[0], imgData[1], imgData[2]);
             let c = state.colors.find(col => col.hex.toLowerCase() === hex.toLowerCase());
-            if (c) selectedColorId = c.id;
+            if (c) {
+                selectedColorId = c.id;
+                elements.newColorInput.value = c.hex;
+            }
             setTool('brush');
             renderPalette();
         }
@@ -344,16 +392,40 @@ function onCanvasMouseUp(e) {
             let maxX = Math.max(marqueeStartCoords.x, currentMouseCoords.x);
             let minY = Math.min(marqueeStartCoords.y, currentMouseCoords.y);
             let maxY = Math.max(marqueeStartCoords.y, currentMouseCoords.y);
-            selectedBlocks = [];
+            let newSelection = [];
             state.blocks.forEach((val, key) => {
                 const [bx, by] = key.split(',').map(Number);
                 if (bx >= minX && bx <= maxX && by >= minY && by <= maxY) {
-                    selectedBlocks.push({ x: bx, y: by });
+                    newSelection.push({ x: bx, y: by });
                 }
             });
+
+            if (e.shiftKey) {
+                newSelection.forEach(np => {
+                    if (!selectedBlocks.find(p => p.x === np.x && p.y === np.y)) selectedBlocks.push(np);
+                });
+            } else if (e.altKey) {
+                selectedBlocks = selectedBlocks.filter(p => {
+                    return !newSelection.find(np => np.x === p.x && np.y === p.y);
+                });
+            } else {
+                selectedBlocks = newSelection;
+            }
+
             marqueeStartCoords = null;
             currentMouseCoords = null;
+
+            if (selectedBlocks.length > 0) {
+                elements.hpPanel.classList.remove('hidden');
+            } else {
+                elements.hpPanel.classList.add('hidden');
+            }
+
             renderCanvas();
+        } else {
+            if (selectedBlocks.length > 0 && !e.shiftKey && !e.altKey) {
+                elements.hpPanel.classList.remove('hidden');
+            }
         }
         return;
     }
@@ -482,9 +554,13 @@ function setTool(tool) {
     document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('tool-' + tool).classList.add('active');
 
-    if (tool !== 'hp') {
+    if (tool !== 'hp' && tool !== 'select') {
         selectedBlockPos = null;
         elements.hpPanel.classList.add('hidden');
+    }
+
+    if (tool === 'select' && selectedBlocks.length > 0) {
+        elements.hpPanel.classList.remove('hidden');
     }
 
     renderCanvas();
@@ -527,14 +603,7 @@ function renderPalette() {
                 deleteColor(color.id);
             } else {
                 selectedColorId = color.id;
-                // If modifying via native input
                 elements.newColorInput.value = color.hex;
-                // Also trigger native color picker sync
-                elements.newColorInput.oninput = (evt) => {
-                    color.hex = evt.target.value;
-                    renderCanvas();
-                    renderWarehouse();
-                };
                 renderPalette();
             }
         });
@@ -680,13 +749,15 @@ function renderWarehouse() {
     document.querySelectorAll('.warehouse-col').forEach(el => {
         new Sortable(el, {
             group: 'warehouse', // set both lists to same group
-            animation: 150,
+            animation: 100,
             ghostClass: 'unit-ghost',
             dragClass: 'unit-drag',
             forceFallback: true,
             fallbackClass: 'unit-drag',
+            fallbackTolerance: 3, // Prevent accidental clicks from triggering drag
+            direction: 'vertical',
             swapThreshold: 0.65,
-            emptyInsertThreshold: 5,
+            emptyInsertThreshold: 10,
             onEnd: function (evt) {
                 const oldColIdx = parseInt(evt.from.dataset.colIndex);
                 const newColIdx = parseInt(evt.to.dataset.colIndex);
@@ -840,7 +911,7 @@ async function saveCurrentProject() {
         json: buildJSONString()
     };
 
-    const docRef = doc(collection(db, "saves"));
+    const docRef = doc(collection(db, `users/${firebaseUser.uid}/projects`));
     try {
         await setDoc(docRef, projData);
         alert("Project saved successfully!");
@@ -848,7 +919,7 @@ async function saveCurrentProject() {
     } catch (err) {
         // Fallback or log if rules prevent it
         console.error("Save error: check Firestore rules", err);
-        alert("Failed to save. Make sure your Firebase Database is created and has rules allowing read/write (e.g., allow read, write: if request.auth != null;).");
+        alert("Failed to save. Check your Firestore rules!");
     }
 }
 
@@ -859,10 +930,9 @@ async function loadSaves() {
         const cards = elements.savesCarousel.querySelectorAll('.save-card:not(.create-new)');
         cards.forEach(c => c.remove());
 
-        const querySnapshot = await getDocs(collection(db, "saves"));
+        const querySnapshot = await getDocs(collection(db, `users/${firebaseUser.uid}/projects`));
         querySnapshot.forEach((docSnap) => {
             const data = docSnap.data();
-            if (data.userId !== firebaseUser.uid) return;
 
             const card = document.createElement('div');
             card.className = 'save-card';
@@ -898,9 +968,10 @@ window.openJson = function (b64json) {
     } catch (e) { console.error(e); }
 };
 window.delSave = async function (id) {
+    if (!firebaseUser) return;
     if (confirm("Delete this save?")) {
         try {
-            await deleteDoc(doc(db, "saves", id));
+            await deleteDoc(doc(db, `users/${firebaseUser.uid}/projects`, id));
             loadSaves();
         } catch (e) { console.error(e); }
     }

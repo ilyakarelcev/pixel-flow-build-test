@@ -455,11 +455,13 @@ body.alt-pressed canvas {
   transition: transform 0.1s;
   user-select: none;
   -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  pointer-events: auto;
 }
 
 .unit-circle:active {
   cursor: grabbing;
-  transform: scale(0.95);
 }
 
 .unit-circle.selected-unit {
@@ -477,7 +479,6 @@ body.alt-pressed canvas {
   opacity: 1 !important;
   border-color: #fbbf24 !important;
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.6) !important;
-  transform: scale(1.1) !important;
   z-index: 1000 !important;
 }
 
