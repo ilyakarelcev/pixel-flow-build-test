@@ -35,6 +35,12 @@ let isDraggingUnit = false;
 let draggedUnitInfo = null; // { colIndex, unitIndex, data, inserted }
 let dragGhostEl = null;
 
+// --- LINK MODE STATE ---
+let isLinkModeActive = false;
+let isLinking = false;
+let linkStartUnit = null; // { colIndex, unitIndex, data, el }
+let linkCurrentLine = null; // SVG line element
+
 // --- ELEMENTS ---
 const elements = {
     canvas: document.getElementById('editor-canvas'),
@@ -69,10 +75,14 @@ const elements = {
     unitMaxAmmoVal: document.getElementById('unit-max-ammo-val'),
     btnCreateUnits: document.getElementById('btn-create-units'),
     btnShuffleUnits: document.getElementById('btn-shuffle-units'),
+    btnLinkMode: document.getElementById('btn-link-mode'),
     warehouseContainer: document.getElementById('warehouse-columns'),
+    linksSvg: document.getElementById('links-svg'),
     unitAmmoControl: document.getElementById('unit-ammo-control'),
     unitAmmoSlider: document.getElementById('unit-ammo-slider'),
     unitAmmoVal: document.getElementById('unit-ammo-val'),
+    unitLinksControl: document.getElementById('unit-links-control'),
+    unitLinksList: document.getElementById('unit-links-list'),
 
     // Bottom Out
     jsonOutput: document.getElementById('json-output'),
@@ -199,6 +209,13 @@ function bindEvents() {
 
     elements.btnCreateUnits.addEventListener('click', createUnits);
     elements.btnShuffleUnits.addEventListener('click', shuffleUnits);
+    elements.btnLinkMode.addEventListener('click', () => {
+        isLinkModeActive = !isLinkModeActive;
+        elements.btnLinkMode.classList.toggle('primary', isLinkModeActive);
+        elements.btnLinkMode.classList.toggle('outline', !isLinkModeActive);
+        document.body.style.cursor = isLinkModeActive ? 'crosshair' : 'default';
+        renderWarehouse();
+    });
 
     elements.unitAmmoSlider.addEventListener('input', (e) => {
         elements.unitAmmoVal.textContent = e.target.value;
@@ -482,9 +499,8 @@ function renderCanvas() {
     }
 
     // Draw Blocks
-    state.blocks.forEach((b, key) => {
+    const drawBlock = (b, key, isSelected) => {
         const [x, y] = key.split(',').map(Number);
-        const isSelected = selectedBlocks.find(p => p.x === x && p.y === y) !== undefined;
         let drawX = x;
         let drawY = y;
 
@@ -523,6 +539,19 @@ function renderCanvas() {
             ctx.textBaseline = 'middle';
             ctx.fillText(b.hp.toString(), drawX * cs + cs / 2, ry * cs + cs / 2 + 1);
         }
+    };
+
+    // First draw unselected, then selected to ensure selected blocks overlap perfectly
+    state.blocks.forEach((b, key) => {
+        const [x, y] = key.split(',').map(Number);
+        const isSelected = selectedBlocks.find(p => p.x === x && p.y === y) !== undefined;
+        if (!isSelected) drawBlock(b, key, isSelected);
+    });
+
+    state.blocks.forEach((b, key) => {
+        const [x, y] = key.split(',').map(Number);
+        const isSelected = selectedBlocks.find(p => p.x === x && p.y === y) !== undefined;
+        if (isSelected) drawBlock(b, key, isSelected);
     });
 
     // Draw Marquee Array Selection Box
@@ -676,7 +705,7 @@ function createUnits() {
         let totalHp = hpStats[c.id];
         while (totalHp > 0) {
             let ammo = Math.min(state.unitMaxAmmo, totalHp);
-            allNewUnits.push({ id: `u_${unitIdCounter++}`, col: c.id, ammo: ammo });
+            allNewUnits.push({ id: `u_${unitIdCounter++}`, col: c.id, ammo: ammo, Lnk: [] });
             totalHp -= ammo;
         }
     });
@@ -750,6 +779,9 @@ function renderWarehouse(isDraggingPass = false) {
 
         elements.warehouseContainer.appendChild(colDiv);
     });
+    
+    // Draw Links Overlay
+    drawLinks();
 }
 
 function updateGhostPosition(cx, cy) {
@@ -761,6 +793,26 @@ function updateGhostPosition(cx, cy) {
 function onUnitPointerDown(e, colIndex, unitIndex, unitData, unitEl) {
     if (e.button !== undefined && e.button !== 0) return;
     e.preventDefault();
+    
+    if (isLinkModeActive) {
+        if (!unitData.Lnk) unitData.Lnk = [];
+        if (unitData.Lnk.length >= 2) return; // Limit to 2 links
+        
+        isLinking = true;
+        linkStartUnit = { colIndex, unitIndex, data: unitData, el: unitEl };
+        
+        linkCurrentLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        linkCurrentLine.setAttribute('stroke', '#fbbf24');
+        linkCurrentLine.setAttribute('stroke-width', '3');
+        linkCurrentLine.setAttribute('stroke-dasharray', '5,5');
+        elements.linksSvg.appendChild(linkCurrentLine);
+        
+        updateLinkLine(e.clientX, e.clientY);
+        
+        document.addEventListener('pointermove', onLinkPointerMove);
+        document.addEventListener('pointerup', onLinkPointerUp);
+        return;
+    }
     
     isDraggingUnit = true;
     draggedUnitInfo = {
@@ -868,6 +920,7 @@ function onUnitPointerUp(e) {
         elements.unitAmmoControl.classList.remove('hidden');
         elements.unitAmmoSlider.value = draggedUnitInfo.data.ammo;
         elements.unitAmmoVal.textContent = draggedUnitInfo.data.ammo;
+        updateUnitLinksPanel();
     } else {
         selectedUnitInfo = {
             colIndex: draggedUnitInfo.colIndex,
@@ -877,10 +930,139 @@ function onUnitPointerUp(e) {
         elements.unitAmmoSlider.value = draggedUnitInfo.data.ammo;
         elements.unitAmmoVal.textContent = draggedUnitInfo.data.ammo;
         updatePaletteStats(); // Also update counts across columns in case we need
+        updateUnitLinksPanel();
     }
     
     draggedUnitInfo = null;
     renderWarehouse();
+}
+
+// --- LINK MODE DRAWING ---
+function updateLinkLine(x, y) {
+    if (!linkCurrentLine || !linkStartUnit || !linkStartUnit.el) return;
+    const svgRect = elements.linksSvg.getBoundingClientRect();
+    const startRect = linkStartUnit.el.getBoundingClientRect();
+    const startX = startRect.left + startRect.width / 2 - svgRect.left;
+    const startY = startRect.top + startRect.height / 2 - svgRect.top;
+    
+    const endX = x - svgRect.left;
+    const endY = y - svgRect.top;
+    
+    linkCurrentLine.setAttribute('x1', startX);
+    linkCurrentLine.setAttribute('y1', startY);
+    linkCurrentLine.setAttribute('x2', endX);
+    linkCurrentLine.setAttribute('y2', endY);
+}
+
+function onLinkPointerMove(e) {
+    if (!isLinking) return;
+    updateLinkLine(e.clientX, e.clientY);
+}
+
+function onLinkPointerUp(e) {
+    if (!isLinking) return;
+    isLinking = false;
+    
+    if (linkCurrentLine) {
+        linkCurrentLine.remove();
+        linkCurrentLine = null;
+    }
+    
+    document.removeEventListener('pointermove', onLinkPointerMove);
+    document.removeEventListener('pointerup', onLinkPointerUp);
+    
+    // Check if pointer is over another unit
+    // elementsFromPoint isn't needed if pointer-events:none on SVG, which we have.
+    const elementBehind = document.elementFromPoint(e.clientX, e.clientY);
+    const targetEl = elementBehind ? elementBehind.closest('.unit-circle') : null;
+    
+    if (targetEl && targetEl !== linkStartUnit.el) {
+        const tCol = parseInt(targetEl.dataset.colIndex);
+        const tUnit = parseInt(targetEl.dataset.unitIndex);
+        
+        const existing = linkStartUnit.data.Lnk.find(l => l.x === tCol && l.y === tUnit);
+        if (!existing) {
+            linkStartUnit.data.Lnk.push({ x: tCol, y: tUnit });
+            renderWarehouse();
+            
+            if (selectedUnitInfo && selectedUnitInfo.colIndex === linkStartUnit.colIndex && selectedUnitInfo.unitIndex === linkStartUnit.unitIndex) {
+                updateUnitLinksPanel();
+            }
+        }
+    }
+    
+    linkStartUnit = null;
+}
+
+function drawLinks() {
+    elements.linksSvg.innerHTML = '';
+    const svgRect = elements.linksSvg.getBoundingClientRect();
+    if (svgRect.width === 0) return; // Not visible yet
+    
+    // Cache positions
+    const posMap = new Map();
+    document.querySelectorAll('.unit-circle').forEach(el => {
+        const c = el.dataset.colIndex;
+        const u = el.dataset.unitIndex;
+        const r = el.getBoundingClientRect();
+        posMap.set(`${c}_${u}`, {
+            x: r.left + r.width / 2 - svgRect.left,
+            y: r.top + r.height / 2 - svgRect.top
+        });
+    });
+
+    state.warehouseColumns.forEach((colData, colIndex) => {
+        colData.forEach((unitData, unitIndex) => {
+            if (!unitData.Lnk || unitData.Lnk.length === 0) return;
+            const startPos = posMap.get(`${colIndex}_${unitIndex}`);
+            if (!startPos) return;
+            
+            unitData.Lnk.forEach(lnk => {
+                const endPos = posMap.get(`${lnk.x}_${lnk.y}`);
+                if (!endPos) return; // Target moved/deleted and not available
+                
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', startPos.x);
+                line.setAttribute('y1', startPos.y);
+                line.setAttribute('x2', endPos.x);
+                line.setAttribute('y2', endPos.y);
+                line.setAttribute('stroke', 'rgba(255,255,255,0.4)');
+                line.setAttribute('stroke-width', '2');
+                elements.linksSvg.appendChild(line);
+            });
+        });
+    });
+}
+
+function updateUnitLinksPanel() {
+    elements.unitLinksList.innerHTML = '';
+    
+    if (!selectedUnitInfo) return;
+    const { colIndex, unitIndex } = selectedUnitInfo;
+    const unit = state.warehouseColumns[colIndex][unitIndex];
+    if (!unit || !unit.Lnk) return;
+    
+    unit.Lnk.forEach((lnk, idx) => {
+        const badge = document.createElement('div');
+        badge.className = 'link-badge';
+        badge.innerHTML = `Col: ${lnk.x}, Row: ${lnk.y} <i class="material-icons" style="font-size:14px; cursor:pointer;" title="Remove">close</i>`;
+        
+        badge.style.display = 'flex';
+        badge.style.alignItems = 'center';
+        badge.style.gap = '4px';
+        badge.style.background = 'rgba(255,255,255,0.1)';
+        badge.style.padding = '2px 6px';
+        badge.style.borderRadius = '4px';
+        badge.style.fontSize = '0.8rem';
+        
+        badge.querySelector('i').addEventListener('click', () => {
+            unit.Lnk.splice(idx, 1);
+            updateUnitLinksPanel();
+            renderWarehouse();
+        });
+        
+        elements.unitLinksList.appendChild(badge);
+    });
 }
 
 // --- JSON GENERATOR ---
@@ -915,7 +1097,7 @@ function buildJSONString() {
                 "Ammo": u.ammo,
                 "IsHidden": false,
                 "IsBarnLock": false,
-                "Lnk": [] // Future dependencies 
+                "Lnk": u.Lnk || [] // Include links
             });
         });
         wbArr.push({ "Units": Units });
@@ -1096,7 +1278,7 @@ window.openJson = function (b64json) {
                 let col = [];
                 if (colData.Units) {
                     colData.Units.forEach(u => {
-                        col.push({ col: u.Col, ammo: u.Ammo || 1 });
+                        col.push({ col: u.Col, ammo: u.Ammo || 1, Lnk: u.Lnk || [] });
                     });
                 }
                 state.warehouseColumns.push(col);

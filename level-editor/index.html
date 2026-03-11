@@ -123,17 +123,26 @@
                         <button id="btn-shuffle-units" class="btn secondary icon-only" title="Shuffle Units">
                             <span class="material-icons-rounded">shuffle</span>
                         </button>
+                        <button id="btn-link-mode" class="btn outline icon-only" title="Link Mode (Drag from one unit to another)">
+                            <span class="material-icons-rounded">link</span>
+                        </button>
                     </div>
 
                     <div id="unit-ammo-control" class="control-group hidden">
                         <label>Selected Unit Ammo: <span id="unit-ammo-val">1</span></label>
                         <input type="range" id="unit-ammo-slider" min="1" max="100" value="1">
+                        
+                        <div id="unit-links-control" class="control-group" style="margin-top: 8px;">
+                            <label>Links:</label>
+                            <div id="unit-links-list" class="links-list" style="display: flex; gap: 4px; flex-wrap: wrap;"></div>
+                        </div>
                     </div>
                 </section>
 
-                <section class="panel-section flex-grow">
-                    <div class="warehouse-grid-container">
-                        <div id="warehouse-columns" class="warehouse-columns">
+                <section class="panel-section flex-grow" style="position: relative;">
+                    <div class="warehouse-grid-container" style="position: relative; height: 100%;">
+                        <svg id="links-svg" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; overflow: visible;"></svg>
+                        <div id="warehouse-columns" class="warehouse-columns" style="position: relative; z-index: 1;">
                             <!-- Columns will go here -->
                         </div>
                     </div>
