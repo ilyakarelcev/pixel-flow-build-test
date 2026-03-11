@@ -11,17 +11,24 @@ const state = {
     nextColorId: 3,
     blocks: new Map(), // key: "x,y", value: { col: id, hp: int }
     warehouseColumns: [], // Array mapping to UI
-    unitMaxAmmo: 5,
+    unitMaxAmmo: 20,
     unitColsCount: 3,
 };
 
-let currentTool = 'brush'; // 'brush', 'hp', 'picker'
+let currentTool = 'brush'; // 'brush', 'hp', 'picker', 'select'
 let selectedColorId = 0;
 let selectedBlockPos = null;
 let selectedUnitInfo = null; // { colIndex, unitIndex }
 
 let isDrawing = false;
 let drawMode = 'draw'; // 'draw' or 'erase' (alt pressed)
+
+let selectedBlocks = []; // array of {x, y}
+let marqueeStartCoords = null;
+let currentMouseCoords = null;
+let isDraggingSelection = false;
+let selectionDragVisualOffset = { dx: 0, dy: 0 };
+let dragStartCoords = null;
 
 // --- ELEMENTS ---
 const elements = {
@@ -34,8 +41,11 @@ const elements = {
 
     // Tools
     btnBrush: document.getElementById('tool-brush'),
+    btnSelect: document.getElementById('tool-select'),
     btnHp: document.getElementById('tool-hp'),
     btnPicker: document.getElementById('tool-picker'),
+    btnZoomIn: document.getElementById('btn-zoom-in'),
+    btnZoomOut: document.getElementById('btn-zoom-out'),
 
     // Palette
     paletteList: document.getElementById('palette-list'),
@@ -76,7 +86,7 @@ const elements = {
 };
 
 // --- INITIALIZATION ---
-const CELL_SIZE_PX = 32;
+let CELL_SIZE_PX = 32;
 
 function init() {
     bindEvents();
@@ -89,6 +99,13 @@ function init() {
 }
 
 function bindEvents() {
+    window.addEventListener('keydown', (e) => {
+        if (e.key === 'Alt' || e.altKey) document.body.classList.add('alt-pressed');
+    });
+    window.addEventListener('keyup', (e) => {
+        if (e.key === 'Alt' || !e.altKey) document.body.classList.remove('alt-pressed');
+    });
+
     // Canvas Listeners
     elements.canvas.addEventListener('mousedown', onCanvasMouseDown);
     window.addEventListener('mousemove', onCanvasMouseMove);
@@ -108,8 +125,12 @@ function bindEvents() {
 
     // Tools
     elements.btnBrush.addEventListener('click', () => setTool('brush'));
+    elements.btnSelect.addEventListener('click', () => setTool('select'));
     elements.btnHp.addEventListener('click', () => setTool('hp'));
     elements.btnPicker.addEventListener('click', () => setTool('picker'));
+
+    elements.btnZoomIn.addEventListener('click', () => { CELL_SIZE_PX = Math.min(128, CELL_SIZE_PX + 8); resizeCanvas(); renderCanvas(); });
+    elements.btnZoomOut.addEventListener('click', () => { CELL_SIZE_PX = Math.max(8, CELL_SIZE_PX - 8); resizeCanvas(); renderCanvas(); });
 
     elements.hpSlider.addEventListener('input', (e) => {
         elements.hpVal.textContent = e.target.value;
@@ -199,10 +220,30 @@ function getGridCoords(e) {
 }
 
 function onCanvasMouseDown(e) {
-    if (e.button !== 0 && currentTool !== 'picker') return; // Left click or any for picker
+    if (e.button !== 0 && currentTool !== 'picker') return;
 
     const coords = getGridCoords(e);
-    if (!coords) return;
+    if (!coords) {
+        if (currentTool === 'select') {
+            selectedBlocks = [];
+            renderCanvas();
+        }
+        return;
+    }
+
+    if (currentTool === 'select') {
+        let clickedOnSelected = selectedBlocks.find(p => p.x === coords.x && p.y === coords.y);
+        if (clickedOnSelected) {
+            isDraggingSelection = true;
+            dragStartCoords = coords;
+        } else {
+            selectedBlocks = [];
+            marqueeStartCoords = coords;
+            currentMouseCoords = coords;
+        }
+        renderCanvas();
+        return;
+    }
 
     if (currentTool === 'picker') {
         const key = `${coords.x},${coords.y}`;
@@ -212,22 +253,13 @@ function onCanvasMouseDown(e) {
             setTool('brush');
             renderPalette();
         } else {
-            // Pick from empty canvas background color if wanted? But no block here. 
-            // the prompt says "пипетка берет цвет вообще с любого пикселя canvas".
-            // Since canvas has blocks, let's just pick block color or nothing. 
-            // If they mean literally any pixel color regardless of block:
             const rect = elements.canvas.getBoundingClientRect();
             const px = Math.floor((e.clientX - rect.left) * (elements.canvas.width / rect.width));
             const py = Math.floor((e.clientY - rect.top) * (elements.canvas.height / rect.height));
             const imgData = elements.ctx.getImageData(px, py, 1, 1).data;
             const hex = rgbToHex(imgData[0], imgData[1], imgData[2]);
-            // check if exists
             let c = state.colors.find(col => col.hex.toLowerCase() === hex.toLowerCase());
-            if (c) {
-                selectedColorId = c.id;
-            } else {
-                // Ignore picking empty bg (which is #1e293b in CSS).
-            }
+            if (c) selectedColorId = c.id;
             setTool('brush');
             renderPalette();
         }
@@ -255,12 +287,70 @@ function onCanvasMouseDown(e) {
 }
 
 function onCanvasMouseMove(e) {
+    if (currentTool === 'select') {
+        const coords = getGridCoords(e);
+        if (!coords) return;
+        if (isDraggingSelection) {
+            selectionDragVisualOffset = {
+                dx: coords.x - dragStartCoords.x,
+                dy: coords.y - dragStartCoords.y
+            };
+            renderCanvas();
+        } else if (marqueeStartCoords) {
+            currentMouseCoords = coords;
+            renderCanvas();
+        }
+        return;
+    }
+
     if (!isDrawing) return;
     const coords = getGridCoords(e);
     if (coords) applyBrush(coords);
 }
 
 function onCanvasMouseUp(e) {
+    if (currentTool === 'select') {
+        if (isDraggingSelection) {
+            const dx = selectionDragVisualOffset.dx;
+            const dy = selectionDragVisualOffset.dy;
+            if (dx !== 0 || dy !== 0) {
+                let newBlocksObj = [];
+                selectedBlocks.forEach(pos => {
+                    const key = `${pos.x},${pos.y}`;
+                    const b = state.blocks.get(key);
+                    if (b) newBlocksObj.push({ oldPos: pos, newPos: { x: pos.x + dx, y: pos.y + dy }, b: b });
+                });
+                newBlocksObj.forEach(obj => state.blocks.delete(`${obj.oldPos.x},${obj.oldPos.y}`));
+                newBlocksObj.forEach(obj => {
+                    if (obj.newPos.x >= 0 && obj.newPos.x < state.gridSize && obj.newPos.y >= 0 && obj.newPos.y < state.gridSize) {
+                        state.blocks.set(`${obj.newPos.x},${obj.newPos.y}`, obj.b);
+                    }
+                });
+                selectedBlocks = newBlocksObj.map(obj => obj.newPos).filter(p => p.x >= 0 && p.x < state.gridSize && p.y >= 0 && p.y < state.gridSize);
+                updatePaletteStats();
+            }
+            isDraggingSelection = false;
+            selectionDragVisualOffset = { dx: 0, dy: 0 };
+            renderCanvas();
+        } else if (marqueeStartCoords && currentMouseCoords) {
+            let minX = Math.min(marqueeStartCoords.x, currentMouseCoords.x);
+            let maxX = Math.max(marqueeStartCoords.x, currentMouseCoords.x);
+            let minY = Math.min(marqueeStartCoords.y, currentMouseCoords.y);
+            let maxY = Math.max(marqueeStartCoords.y, currentMouseCoords.y);
+            selectedBlocks = [];
+            state.blocks.forEach((val, key) => {
+                const [bx, by] = key.split(',').map(Number);
+                if (bx >= minX && bx <= maxX && by >= minY && by <= maxY) {
+                    selectedBlocks.push({ x: bx, y: by });
+                }
+            });
+            marqueeStartCoords = null;
+            currentMouseCoords = null;
+            renderCanvas();
+        }
+        return;
+    }
+
     if (isDrawing) {
         isDrawing = false;
         updatePaletteStats();
@@ -310,25 +400,35 @@ function renderCanvas() {
     // Draw Blocks
     state.blocks.forEach((b, key) => {
         const [x, y] = key.split(',').map(Number);
+        const isSelected = selectedBlocks.find(p => p.x === x && p.y === y) !== undefined;
+        let drawX = x;
+        let drawY = y;
+
+        if (isSelected && currentTool === 'select' && isDraggingSelection) {
+            drawX += selectionDragVisualOffset.dx;
+            drawY += selectionDragVisualOffset.dy;
+        }
+
         const colDef = state.colors.find(c => c.id === b.col);
         if (!colDef) return;
 
         // Invert Y
-        const ry = s - 1 - y;
+        const ry = s - 1 - drawY;
 
         // Draw Fill
         ctx.fillStyle = colDef.hex;
-        ctx.fillRect(x * cs, ry * cs, cs, cs);
+        ctx.fillRect(drawX * cs, ry * cs, cs, cs);
 
         // Selection outline
-        if (selectedBlockPos && selectedBlockPos.x === x && selectedBlockPos.y === y) {
+        if ((selectedBlockPos && selectedBlockPos.x === drawX && selectedBlockPos.y === drawY && currentTool === 'hp') ||
+            (isSelected && currentTool === 'select' && !isDraggingSelection)) {
             ctx.strokeStyle = '#fbbf24';
             ctx.lineWidth = 3;
-            ctx.strokeRect(x * cs + 1.5, ry * cs + 1.5, cs - 3, cs - 3);
+            ctx.strokeRect(drawX * cs + 1.5, ry * cs + 1.5, cs - 3, cs - 3);
         } else {
             ctx.strokeStyle = 'rgba(0,0,0,0.5)';
             ctx.lineWidth = 1;
-            ctx.strokeRect(x * cs, ry * cs, cs, cs);
+            ctx.strokeRect(drawX * cs, ry * cs, cs, cs);
         }
 
         // Draw HP
@@ -337,13 +437,36 @@ function renderCanvas() {
             ctx.font = 'bold 12px Outfit';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText(b.hp.toString(), x * cs + cs / 2, ry * cs + cs / 2 + 1);
+            ctx.fillText(b.hp.toString(), drawX * cs + cs / 2, ry * cs + cs / 2 + 1);
         }
     });
+
+    // Draw Marquee Array Selection Box
+    if (marqueeStartCoords && currentMouseCoords && currentTool === 'select') {
+        let minX = Math.min(marqueeStartCoords.x, currentMouseCoords.x);
+        let maxX = Math.max(marqueeStartCoords.x, currentMouseCoords.x);
+        let minY = Math.min(marqueeStartCoords.y, currentMouseCoords.y);
+        let maxY = Math.max(marqueeStartCoords.y, currentMouseCoords.y);
+
+        const ryMin = s - 1 - maxY; // inverted y
+        const ryMax = s - 1 - minY;
+
+        ctx.strokeStyle = '#fbbf24';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 4]);
+        ctx.strokeRect(minX * cs, ryMin * cs, (maxX - minX + 1) * cs, (maxY - minY + 1) * cs);
+        ctx.setLineDash([]);
+    }
 }
 
 // --- TOOLS ---
 function setTool(tool) {
+    if (currentTool === 'select') {
+        selectedBlocks = [];
+        marqueeStartCoords = null;
+        isDraggingSelection = false;
+    }
+
     currentTool = tool;
     document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('tool-' + tool).classList.add('active');
@@ -351,8 +474,9 @@ function setTool(tool) {
     if (tool !== 'hp') {
         selectedBlockPos = null;
         elements.hpPanel.classList.add('hidden');
-        renderCanvas();
     }
+
+    renderCanvas();
 }
 
 // --- PALETTE ---
@@ -546,6 +670,10 @@ function renderWarehouse() {
         new Sortable(el, {
             group: 'warehouse', // set both lists to same group
             animation: 150,
+            ghostClass: 'unit-ghost',
+            dragClass: 'unit-drag',
+            forceFallback: true,
+            fallbackClass: 'unit-drag',
             onEnd: function (evt) {
                 const oldColIdx = parseInt(evt.from.dataset.colIndex);
                 const newColIdx = parseInt(evt.to.dataset.colIndex);
@@ -614,7 +742,7 @@ function buildJSONString() {
     state.colors.forEach((c, idx) => {
         idMapping[c.id] = idx;
         const rgb = hexToRgb(c.hex);
-        finalColors.push({ r: rgb.r / 255, g: rgb.g / 255, b: rgb.b / 255, a: 1.0 });
+        finalColors.push({ r: rgb.r, g: rgb.g, b: rgb.b, a: 255 });
     });
 
     // Remap IDs

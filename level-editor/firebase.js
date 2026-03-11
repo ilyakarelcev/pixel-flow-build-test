@@ -5,12 +5,13 @@ import { getFirestore, collection as fbCol, doc as fbDoc, setDoc as fbSetDoc, ge
 // TODO: Replace this with your actual Firebase config! 
 // Go to Firebase Console -> Project Settings -> General -> Web Apps
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_AUTH_DOMAIN",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_STORAGE_BUCKET",
-    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyDyMoV9MnVUda0S2lTkZMh-USIi8fGVaic",
+    authDomain: "pixel-art-generator-53fd9.firebaseapp.com",
+    projectId: "pixel-art-generator-53fd9",
+    storageBucket: "pixel-art-generator-53fd9.firebasestorage.app",
+    messagingSenderId: "887628311339",
+    appId: "1:887628311339:web:c8185146f247077b8bf36e",
+    measurementId: "G-JW1C4QMR81"
 };
 
 let app, auth, provider, db;

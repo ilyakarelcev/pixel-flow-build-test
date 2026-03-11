@@ -8,7 +8,7 @@
 
     <!-- Fonts and Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Rounded" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 
     <!-- SortableJS for easy drag-and-drop lists -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
@@ -50,18 +50,24 @@
 
                 <section class="panel-section">
                     <h2>Tools</h2>
+                    <div class="hint">Hold <b>ALT</b> while using Brush to delete blocks.</div>
                     <div class="tool-group">
                         <button id="tool-brush" class="tool-btn active"
                             title="Brush (Left Click to draw, Alt+Click to erase)">
-                            <span class="material-icons-rounded">brush</span>
+                            <i class="material-icons">brush</i>
                             <span>Brush</span>
                         </button>
-                        <button id="tool-hp" class="tool-btn" title="HP Tool (Click a block to select)">
-                            <span class="material-icons-rounded">healing</span>
+                        <button id="tool-select" class="tool-btn" title="Select (Drag to select, then drag to move)">
+                            <i class="material-icons">select_all</i>
+                            <span>Select</span>
+                        </button>
+                        <button id="tool-hp" class="tool-btn" title="HP Tool (Click a block to edit its HP)">
+                            <i class="material-icons">healing</i>
                             <span>HP Tool</span>
                         </button>
-                        <button id="tool-picker" class="tool-btn" title="Color Picker (Pick from canvas)">
-                            <span class="material-icons-rounded">colorize</span>
+                        <button id="tool-picker" class="tool-btn"
+                            title="Color Picker (Click on any pixel to copy its color)">
+                            <i class="material-icons">colorize</i>
                             <span>Picker</span>
                         </button>
                     </div>
@@ -88,6 +94,12 @@
             <!-- CENTER: Canvas -->
             <section class="center-stage">
                 <div class="canvas-container glass-panel" id="canvas-wrapper">
+                    <div class="zoom-controls">
+                        <button id="btn-zoom-in" class="btn secondary icon-only" title="Zoom In"><i
+                                class="material-icons">add</i></button>
+                        <button id="btn-zoom-out" class="btn secondary icon-only" title="Zoom Out"><i
+                                class="material-icons">remove</i></button>
+                    </div>
                     <canvas id="editor-canvas"></canvas>
                 </div>
             </section>
@@ -102,8 +114,8 @@
                         <input type="range" id="unit-cols" min="1" max="10" value="3">
                     </div>
                     <div class="control-group">
-                        <label>Max Ammo per Unit: <span id="unit-max-ammo-val">5</span></label>
-                        <input type="range" id="unit-max-ammo" min="1" max="50" value="5">
+                        <label>Max Ammo per Unit: <span id="unit-max-ammo-val">20</span></label>
+                        <input type="range" id="unit-max-ammo" min="1" max="50" value="20">
                     </div>
 
                     <div class="button-row">
