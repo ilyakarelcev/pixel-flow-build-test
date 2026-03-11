@@ -55,10 +55,10 @@ const elements = {
     // Tools
     btnBrush: document.getElementById('tool-brush'),
     btnSelect: document.getElementById('tool-select'),
-    btnHp: document.getElementById('tool-hp'),
     btnPicker: document.getElementById('tool-picker'),
     btnZoomIn: document.getElementById('btn-zoom-in'),
     btnZoomOut: document.getElementById('btn-zoom-out'),
+    btnFit: document.getElementById('btn-fit'),
 
     // Palette
     paletteList: document.getElementById('palette-list'),
@@ -118,7 +118,7 @@ function init() {
     bindEvents();
     renderPalette();
     initWarehouseCols();
-    resizeCanvas();
+    fitCanvas();
     renderCanvas();
 
     setupAuthListeners();
@@ -128,6 +128,9 @@ function bindEvents() {
     window.addEventListener('keydown', (e) => {
         if ((e.key === 'Alt' || e.altKey) && currentTool === 'brush') {
             document.body.classList.add('alt-pressed');
+        }
+        if (e.key.toLowerCase() === 'i') {
+            setTool('picker');
         }
     });
     window.addEventListener('keyup', (e) => {
@@ -143,27 +146,27 @@ function bindEvents() {
     elements.canvas.addEventListener('mousedown', onCanvasMouseDown);
     window.addEventListener('mousemove', onCanvasMouseMove);
     window.addEventListener('mouseup', onCanvasMouseUp);
+    window.addEventListener('resize', fitCanvas);
 
     elements.canvas.addEventListener('contextmenu', e => e.preventDefault()); // Prevent right click
 
     // Board Settings
     elements.gridSizeSlider.addEventListener('input', (e) => {
-        let oldSize = state.gridSize;
         state.gridSize = parseInt(e.target.value);
         elements.gridSizeVal.textContent = state.gridSize;
         trimBlocks();
-        resizeCanvas();
+        fitCanvas();
         renderCanvas();
     });
 
     // Tools
     elements.btnBrush.addEventListener('click', () => setTool('brush'));
     elements.btnSelect.addEventListener('click', () => setTool('select'));
-    elements.btnHp.addEventListener('click', () => setTool('hp'));
     elements.btnPicker.addEventListener('click', () => setTool('picker'));
 
-    elements.btnZoomIn.addEventListener('click', () => { CELL_SIZE_PX = Math.min(128, CELL_SIZE_PX + 8); resizeCanvas(); renderCanvas(); });
-    elements.btnZoomOut.addEventListener('click', () => { CELL_SIZE_PX = Math.max(8, CELL_SIZE_PX - 8); resizeCanvas(); renderCanvas(); });
+    elements.btnZoomIn.addEventListener('click', () => { CELL_SIZE_PX = Math.min(256, CELL_SIZE_PX + 1.6); resizeCanvas(); renderCanvas(); });
+    elements.btnZoomOut.addEventListener('click', () => { CELL_SIZE_PX = Math.max(4, CELL_SIZE_PX - 1.6); resizeCanvas(); renderCanvas(); });
+    elements.btnFit.addEventListener('click', fitCanvas);
 
     elements.hpSlider.addEventListener('input', (e) => {
         const val = parseInt(e.target.value);
@@ -315,6 +318,19 @@ function resizeCanvas() {
     elements.canvas.height = state.gridSize * CELL_SIZE_PX;
 }
 
+function fitCanvas() {
+    const wrapper = elements.canvas.parentElement;
+    if (!wrapper) return;
+
+    const padding = 48; // Space around the canvas
+    const availW = wrapper.clientWidth - padding;
+    const availH = wrapper.clientHeight - padding;
+
+    CELL_SIZE_PX = Math.min(availW, availH) / state.gridSize;
+    resizeCanvas();
+    renderCanvas();
+}
+
 function getGridCoords(e) {
     const rect = elements.canvas.getBoundingClientRect();
     const scaleX = elements.canvas.width / rect.width;
@@ -384,12 +400,7 @@ function onCanvasMouseDown(e) {
             }
         }
 
-        // Setup marquee selection for drag even with modifiers if dragging empty space
-        if (!isDraggingSelection) {
-            marqueeStartCoords = coords;
-            currentMouseCoords = coords;
-        }
-
+        showControlPanels();
         renderCanvas();
         return;
     }
@@ -425,19 +436,7 @@ function onCanvasMouseDown(e) {
         return;
     }
 
-    if (currentTool === 'hp') {
-        selectedBlockPos = coords;
-        const b = state.blocks.get(`${coords.x},${coords.y}`);
-        if (b) {
-            elements.hpPanel.classList.remove('hidden');
-            elements.hpSlider.value = b.hp;
-            elements.hpVal.textContent = b.hp;
-        } else {
-            elements.hpPanel.classList.add('hidden');
-        }
-        renderCanvas();
-        return;
-    }
+
 
     // BRUSH TOOL
     isDrawing = true;
@@ -548,48 +547,10 @@ function onCanvasMouseUp(e) {
             marqueeStartCoords = null;
             currentMouseCoords = null;
 
-            function showControlPanels() {
-                if (selectedBlocks.length > 0 || selectedKeys.length > 0) {
-                    elements.hpPanel.classList.remove('hidden');
-                    if (selectedKeys.length > 0) {
-                        elements.blockHpContainer.classList.add('hidden');
-                        elements.keySizeContainer.classList.remove('hidden');
-                        let k = state.keys.get(`${selectedKeys[0].x},${selectedKeys[0].y}`);
-                        if (k) {
-                            elements.keyWSlider.value = k.w;
-                            elements.keyWVal.textContent = k.w;
-                            elements.keyHSlider.value = k.h;
-                            elements.keyHVal.textContent = k.h;
-                        }
-                    } else {
-                        elements.keySizeContainer.classList.add('hidden');
-                        elements.blockHpContainer.classList.remove('hidden');
-                    }
-                } else {
-                    elements.hpPanel.classList.add('hidden');
-                }
-            }
-
             showControlPanels();
             renderCanvas();
         } else {
-            if ((selectedBlocks.length > 0 || selectedKeys.length > 0) && !e.shiftKey && !e.altKey) {
-                elements.hpPanel.classList.remove('hidden');
-                if (selectedKeys.length > 0) {
-                    elements.blockHpContainer.classList.add('hidden');
-                    elements.keySizeContainer.classList.remove('hidden');
-                    let k = state.keys.get(`${selectedKeys[0].x},${selectedKeys[0].y}`);
-                    if (k) {
-                        elements.keyWSlider.value = k.w;
-                        elements.keyWVal.textContent = k.w;
-                        elements.keyHSlider.value = k.h;
-                        elements.keyHVal.textContent = k.h;
-                    }
-                } else {
-                    elements.keySizeContainer.classList.add('hidden');
-                    elements.blockHpContainer.classList.remove('hidden');
-                }
-            }
+            showControlPanels();
         }
         return;
     }
@@ -597,6 +558,35 @@ function onCanvasMouseUp(e) {
     if (isDrawing) {
         isDrawing = false;
         updatePaletteStats();
+    }
+    showControlPanels();
+}
+
+function showControlPanels() {
+    if (selectedBlocks.length > 0 || selectedKeys.length > 0) {
+        elements.hpPanel.classList.remove('hidden');
+        if (selectedKeys.length > 0) {
+            elements.blockHpContainer.classList.add('hidden');
+            elements.keySizeContainer.classList.remove('hidden');
+            let k = state.keys.get(`${selectedKeys[0].x},${selectedKeys[0].y}`);
+            if (k) {
+                elements.keyWSlider.value = k.w;
+                elements.keyWVal.textContent = k.w;
+                elements.keyHSlider.value = k.h;
+                elements.keyHVal.textContent = k.h;
+            }
+        } else {
+            elements.keySizeContainer.classList.add('hidden');
+            elements.blockHpContainer.classList.remove('hidden');
+            // Update HP slider if needed
+            let b = state.blocks.get(`${selectedBlocks[0].x},${selectedBlocks[0].y}`);
+            if (b) {
+                elements.hpSlider.value = b.hp;
+                elements.hpVal.textContent = b.hp;
+            }
+        }
+    } else {
+        elements.hpPanel.classList.add('hidden');
     }
 }
 

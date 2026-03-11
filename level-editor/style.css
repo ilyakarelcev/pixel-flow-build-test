@@ -102,10 +102,29 @@ header.navbar {
 /* WORKSPACE */
 .workspace {
   display: flex;
-  flex: 1;
   gap: var(--spacing);
-  min-height: 80vh;
-  /* Make sure workspace takes substantial height */
+  flex: 1;
+}
+
+.main-content-area {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing);
+  flex: 1;
+  min-width: 0; /* Prevent overflow */
+}
+
+.editor-row {
+  display: flex;
+  gap: var(--spacing);
+  flex: 1;
+  min-height: 0;
+}
+
+.bottom-info-area {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing);
 }
 
 .panel {
@@ -361,8 +380,7 @@ input[type="color"] {
   display: flex;
   flex-direction: column;
   gap: var(--spacing);
-  overflow: hidden;
-  position: relative;
+  min-width: 0;
 }
 
 .canvas-container {
@@ -500,27 +518,14 @@ body.alt-pressed canvas {
   cursor: grabbing !important;
 }
 
-/* BOTTOM PANEL */
-.bottom-panel {
-  display: flex;
-  gap: var(--spacing);
-  min-height: 85vh;
-  flex-shrink: 0;
-}
-
-.saves-section {
-  flex: 1;
+.json-section, .saves-section {
   display: flex;
   flex-direction: column;
   padding: 16px;
-  overflow: hidden;
 }
 
-.json-section {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  padding: 16px;
+.json-section textarea#json-output {
+  min-height: 150px;
 }
 
 .section-header {
