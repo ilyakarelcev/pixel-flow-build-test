@@ -1,4 +1,4 @@
-import { auth, provider, db, signInWithPopup, signOut, collection, doc, setDoc, getDocs, deleteDoc } from './firebase.js';
+import { auth, provider, db, signInWithPopup, signOut, collection, doc, setDoc, getDocs, deleteDoc, query, orderBy } from './firebase.js';
 
 // --- STATE ---
 const state = {
@@ -601,12 +601,21 @@ function onCanvasMouseUp(e) {
 }
 
 function applyBrush(coords) {
-    const key = `${coords.x},${coords.y}`;
+    const keyStr = `${coords.x},${coords.y}`;
     if (drawMode === 'erase') {
-        state.blocks.delete(key);
+        state.blocks.delete(keyStr);
+        state.keys.delete(keyStr);
     } else {
-        if (!state.colors.find(c => c.id === selectedColorId)) return;
-        state.blocks.set(key, { col: selectedColorId, hp: parseInt(elements.hpSlider.value) });
+        if (selectedColorId === 'key') {
+            if (!state.keys.has(keyStr)) {
+                state.keys.set(keyStr, { w: 1, h: 1 });
+                // Optional: state.blocks.delete(keyStr); if we want keys to override blocks
+            }
+        } else {
+            if (!state.colors.find(c => c.id === selectedColorId)) return;
+            state.blocks.set(keyStr, { col: selectedColorId, hp: parseInt(elements.hpSlider.value) });
+            // Optional: state.keys.delete(keyStr); if blocks override keys
+        }
     }
     renderCanvas();
 }
@@ -990,7 +999,7 @@ function renderWarehouse(isDraggingPass = false) {
             
             if (unitData.IsBarnLock) {
                 unitEl.classList.add('is-barn-lock');
-                unitEl.innerHTML = '<span class="material-icons-rounded" style="font-size: 20px;">lock</span>';
+                unitEl.innerHTML = '<img src="Lock_icon.png" style="width: 24px; height: 24px; object-fit: contain; pointer-events: none; user-select: none;" alt="lock"/>';
             } else {
                 unitEl.textContent = unitData.ammo;
             }
@@ -1043,9 +1052,12 @@ function onUnitPointerDown(e, colIndex, unitIndex, unitData, unitEl) {
         isLinking = true;
         linkStartUnit = { colIndex, unitIndex, data: unitData, el: unitEl };
         
+        const uDef = state.colors.find(c => c.id === unitData.col);
+        const uHex = uDef ? uDef.hex : '#fbbf24';
+
         linkCurrentLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        linkCurrentLine.setAttribute('stroke', '#fbbf24');
-        linkCurrentLine.setAttribute('stroke-width', '3');
+        linkCurrentLine.setAttribute('stroke', uHex);
+        linkCurrentLine.setAttribute('stroke-width', '4');
         linkCurrentLine.setAttribute('stroke-dasharray', '5,5');
         elements.linksSvg.appendChild(linkCurrentLine);
         
@@ -1245,14 +1257,21 @@ function drawLinks() {
     const svgRect = elements.linksSvg.getBoundingClientRect();
     if (svgRect.width === 0) return; // Not visible yet
     
-    // Cache positions
+    // Cache positions and colors
     const posMap = new Map();
     document.querySelectorAll('.unit-circle').forEach(el => {
         const id = el.dataset.id;
+        const colIdx = parseInt(el.dataset.colIndex);
+        const unitIdx = parseInt(el.dataset.unitIndex);
+        const uData = state.warehouseColumns[colIdx][unitIdx];
+        const uDef = state.colors.find(c => c.id === uData.col);
+        const uHex = uDef ? uDef.hex : '#ffffff';
+
         const r = el.getBoundingClientRect();
         posMap.set(id, {
             x: r.left + r.width / 2 - svgRect.left,
-            y: r.top + r.height / 2 - svgRect.top
+            y: r.top + r.height / 2 - svgRect.top,
+            color: uHex
         });
     });
 
@@ -1261,25 +1280,37 @@ function drawLinks() {
     state.warehouseColumns.forEach((colData, colIndex) => {
         colData.forEach((unitData, unitIndex) => {
             if (!unitData.Lnk || unitData.Lnk.length === 0) return;
-            const startPos = posMap.get(unitData.id);
-            if (!startPos) return;
+            const startNode = posMap.get(unitData.id);
+            if (!startNode) return;
             
             unitData.Lnk.forEach(targetId => {
                 const pairKey = [unitData.id, targetId].sort().join('-');
                 if (drawnPairs.has(pairKey)) return;
                 drawnPairs.add(pairKey);
 
-                const endPos = posMap.get(targetId);
-                if (!endPos) return; // Target deleted
+                const endNode = posMap.get(targetId);
+                if (!endNode) return; // Target deleted
                 
-                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                line.setAttribute('x1', startPos.x);
-                line.setAttribute('y1', startPos.y);
-                line.setAttribute('x2', endPos.x);
-                line.setAttribute('y2', endPos.y);
-                line.setAttribute('stroke', 'rgba(255,255,255,0.4)');
-                line.setAttribute('stroke-width', '2');
-                elements.linksSvg.appendChild(line);
+                const midX = (startNode.x + endNode.x) / 2;
+                const midY = (startNode.y + endNode.y) / 2;
+
+                const line1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line1.setAttribute('x1', startNode.x);
+                line1.setAttribute('y1', startNode.y);
+                line1.setAttribute('x2', midX);
+                line1.setAttribute('y2', midY);
+                line1.setAttribute('stroke', startNode.color);
+                line1.setAttribute('stroke-width', '4');
+                elements.linksSvg.appendChild(line1);
+
+                const line2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line2.setAttribute('x1', midX);
+                line2.setAttribute('y1', midY);
+                line2.setAttribute('x2', endNode.x);
+                line2.setAttribute('y2', endNode.y);
+                line2.setAttribute('stroke', endNode.color);
+                line2.setAttribute('stroke-width', '4');
+                elements.linksSvg.appendChild(line2);
             });
         });
     });
@@ -1508,7 +1539,8 @@ async function loadSaves() {
         const cards = elements.savesCarousel.querySelectorAll('.save-card:not(.create-new)');
         cards.forEach(c => c.remove());
 
-        const querySnapshot = await getDocs(collection(db, `users/${firebaseUser.uid}/projects`));
+        const q = query(collection(db, `users/${firebaseUser.uid}/projects`), orderBy("timestamp", "desc"));
+        const querySnapshot = await getDocs(q);
         querySnapshot.forEach((docSnap) => {
             const data = docSnap.data();
 

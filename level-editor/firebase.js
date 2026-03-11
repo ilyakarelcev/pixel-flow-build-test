@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup as fbSignIn, signOut as fbSignOut } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
-import { getFirestore, collection as fbCol, doc as fbDoc, setDoc as fbSetDoc, getDocs as fbGetDocs, deleteDoc as fbDelDoc } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+import { getFirestore, collection as fbCol, doc as fbDoc, setDoc as fbSetDoc, getDocs as fbGetDocs, deleteDoc as fbDelDoc, query as fbQuery, orderBy as fbOrderBy } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
 
 // TODO: Replace this with your actual Firebase config! 
 // Go to Firebase Console -> Project Settings -> General -> Web Apps
@@ -15,7 +15,7 @@ const firebaseConfig = {
 };
 
 let app, auth, provider, db;
-let signInWithPopup, signOut, collection, doc, setDoc, getDocs, deleteDoc;
+let signInWithPopup, signOut, collection, doc, setDoc, getDocs, deleteDoc, query, orderBy;
 
 try {
     if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
@@ -31,6 +31,8 @@ try {
         setDoc = fbSetDoc;
         getDocs = fbGetDocs;
         deleteDoc = fbDelDoc;
+        query = fbQuery;
+        orderBy = fbOrderBy;
     } else {
         throw new Error("Firebase config missing");
     }
@@ -48,6 +50,8 @@ try {
     setDoc = async () => { };
     getDocs = async () => [];
     deleteDoc = async () => { };
+    query = () => { };
+    orderBy = () => { };
 }
 
-export { auth, provider, db, signInWithPopup, signOut, collection, doc, setDoc, getDocs, deleteDoc };
+export { auth, provider, db, signInWithPopup, signOut, collection, doc, setDoc, getDocs, deleteDoc, query, orderBy };
