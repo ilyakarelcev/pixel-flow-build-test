@@ -725,6 +725,11 @@ textarea#json-output {
   font-family: 'Courier New', Courier, monospace;
   font-size: 0.85rem;
   outline: none;
+  transition: min-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+textarea#json-output.expanded {
+  min-height: 450px;
 }
 
 .saves-carousel {

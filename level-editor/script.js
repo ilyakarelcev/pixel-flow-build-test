@@ -104,6 +104,7 @@ const elements = {
     btnGenerateJson: document.getElementById('btn-generate-json'),
     btnCopyJson: document.getElementById('btn-copy-json'),
     btnLoadJson: document.getElementById('btn-load-json'),
+    btnExpandJson: document.getElementById('btn-expand-json'),
 
     // Saves
     savesCarousel: document.getElementById('saves-carousel'),
@@ -133,16 +134,18 @@ function init() {
 
 function bindEvents() {
     window.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
         if ((e.key === 'Alt' || e.altKey) && currentTool === 'brush') {
             document.body.classList.add('alt-pressed');
         }
-        if (e.key.toLowerCase() === 'i') {
+        if (e.code === 'KeyI') {
             setTool('picker');
         }
-        if (e.key.toLowerCase() === 'b') {
+        if (e.code === 'KeyB') {
             setTool('brush');
         }
-        if (e.key.toLowerCase() === 'w') {
+        if (e.code === 'KeyW') {
             setTool('select');
         }
     });
@@ -334,7 +337,6 @@ function bindEvents() {
             const dataStr = elements.jsonOutput.value;
             if (!dataStr.trim()) return;
             loadFromJsonString(dataStr);
-            alert("JSON Loaded successfully!");
         } catch (e) {
             console.error("Load JSON from input error", e);
             alert("Failed to parse JSON. Please check if the format is correct.");
@@ -345,6 +347,16 @@ function bindEvents() {
     elements.btnLogin.addEventListener('click', doLogin);
     elements.btnLogout.addEventListener('click', doLogout);
     elements.btnSaveProject.addEventListener('click', saveCurrentProject);
+
+    elements.btnExpandJson.addEventListener('click', () => {
+        elements.jsonOutput.classList.toggle('expanded');
+        const icon = elements.btnExpandJson.querySelector('.material-icons');
+        if (elements.jsonOutput.classList.contains('expanded')) {
+            icon.textContent = 'compress';
+        } else {
+            icon.textContent = 'expand';
+        }
+    });
 }
 
 // --- CANVAS & DRAWING ---
@@ -386,18 +398,19 @@ function getGridCoords(e) {
 }
 
 function onCanvasMouseDown(e) {
-    if (e.button !== 0 && currentTool !== 'picker') return;
+    const isRightClick = e.button === 2;
+    if (e.button !== 0 && !isRightClick && currentTool !== 'picker') return;
 
     const coords = getGridCoords(e);
     if (!coords) {
-        if (currentTool === 'select') {
+        if (currentTool === 'select' && !isRightClick) {
             selectedBlocks = [];
             renderCanvas();
         }
         return;
     }
 
-    if (currentTool === 'select') {
+    if (currentTool === 'select' && !isRightClick) {
         let clickedOnSelectedBlock = selectedBlocks.find(p => p.x === coords.x && p.y === coords.y);
         let clickedOnSelectedKey = selectedKeys.find(p => p.x === coords.x && p.y === coords.y);
 
@@ -478,11 +491,9 @@ function onCanvasMouseDown(e) {
         return;
     }
 
-
-
-    // BRUSH TOOL
+    // BRUSH TOOL (or RMB in any non-picker tool)
     isDrawing = true;
-    drawMode = e.altKey ? 'erase' : 'draw';
+    drawMode = (e.altKey || isRightClick) ? 'erase' : 'draw';
     applyBrush(coords);
 }
 
@@ -1595,7 +1606,6 @@ async function saveCurrentProject() {
     const docRef = doc(collection(db, `users/${firebaseUser.uid}/projects`));
     try {
         await setDoc(docRef, projData);
-        alert("Project saved successfully!");
         loadSaves(); // refresh cards
     } catch (err) {
         // Fallback or log if rules prevent it
@@ -1644,7 +1654,6 @@ window.openJson = function (b64json) {
         const decoded = decodeURIComponent(atob(b64json));
         elements.jsonOutput.value = decoded;
         loadFromJsonString(decoded);
-        alert("Project loaded successfully!");
     } catch (e) {
         console.error("Load JSON error", e);
         alert("Failed to parse or load JSON.");
@@ -1755,7 +1764,6 @@ window.overwriteSave = async function (id) {
         };
         try {
             await setDoc(doc(db, `users/${firebaseUser.uid}/projects`, id), projData, { merge: true });
-            alert("Project overwritten successfully!");
             loadSaves();
         } catch (e) {
             console.error(e);
