@@ -87,6 +87,7 @@ const elements = {
     unitMaxAmmoSlider: document.getElementById('unit-max-ammo'),
     unitMaxAmmoVal: document.getElementById('unit-max-ammo-val'),
     btnCreateUnits: document.getElementById('btn-create-units'),
+    btnAddUnit: document.getElementById('btn-add-unit'),
     btnShuffleUnits: document.getElementById('btn-shuffle-units'),
     btnLinkMode: document.getElementById('btn-link-mode'),
     warehouseContainer: document.getElementById('warehouse-columns'),
@@ -284,6 +285,7 @@ function bindEvents() {
     });
 
     elements.btnCreateUnits.addEventListener('click', createUnits);
+    elements.btnAddUnit.addEventListener('click', addUnit);
     elements.btnShuffleUnits.addEventListener('click', shuffleUnits);
     elements.btnLinkMode.addEventListener('click', () => {
         isLinkModeActive = !isLinkModeActive;
@@ -1039,6 +1041,42 @@ function createUnits() {
         state.warehouseColumns[colIdx].push(u);
         colIdx = (colIdx + 1) % state.unitColsCount;
     });
+
+    renderWarehouse();
+    updatePaletteStats();
+}
+
+function addUnit() {
+    // Generate a unique ID for the unit
+    let maxId = 0;
+    state.warehouseColumns.forEach(col => {
+        col.forEach(u => {
+            const idMatch = u.id.match(/^u_(\d+)$/);
+            if (idMatch) {
+                const idNum = parseInt(idMatch[1]);
+                if (idNum > maxId) maxId = idNum;
+            }
+        });
+    });
+    const nextId = `u_${maxId + 1}`;
+
+    // Get color ID for index 0
+    const colorId = state.colors.length > 0 ? state.colors[0].id : 0;
+
+    const newUnit = {
+        id: nextId,
+        col: colorId,
+        ammo: 1,
+        Lnk: [],
+        IsHidden: false,
+        IsBarnLock: false
+    };
+
+    // Add to the first column (or distribute evenly)
+    if (state.warehouseColumns.length === 0) {
+        state.warehouseColumns = Array.from({ length: state.unitColsCount }, () => []);
+    }
+    state.warehouseColumns[0].push(newUnit);
 
     renderWarehouse();
     updatePaletteStats();
