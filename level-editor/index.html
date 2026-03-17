@@ -13,35 +13,27 @@
     <!-- SortableJS for easy drag-and-drop lists -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 
+    <link rel="icon" type="image/png" href="icon.png">
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body class="dark-theme">
     <div id="app">
-        <!-- TOP NAVBAR -->
-        <header class="navbar glass-panel">
-            <div class="logo">
-                <img src="icon.png" class="app-icon" alt="Icon">
-                <h1>Slime Flow Level Editor</h1>
-            </div>
-
-            <div class="auth-section">
-                <div id="user-info" class="hidden">
-                    <img id="user-avatar" src="" alt="Avatar">
-                    <span id="user-name">User</span>
-                    <button id="btn-logout" class="btn outline">Logout</button>
-                </div>
-                <button id="btn-login" class="btn primary">Login with Google</button>
-            </div>
-        </header>
-
         <!-- MAIN WORKSPACE -->
         <main class="workspace">
-            <!-- Left & Center columns pooled together -->
             <div class="main-content-area">
                 <div class="editor-row">
                     <!-- LEFT PANEL: Board Settings & Tools -->
                     <aside class="panel left-panel glass-panel">
+                        <div class="side-logo">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <img src="icon.png" class="app-icon" alt="Icon">
+                                <h1>Slime Flow</h1>
+                            </div>
+                            <button id="btn-show-help" class="btn secondary icon-only" title="Инструкция">
+                                <i class="material-icons" style="font-size: 18px;">help_outline</i>
+                            </button>
+                        </div>
                         <section class="panel-section">
                             <h2>Board Settings</h2>
                             <div class="control-group" id="grid-size-container">
@@ -57,17 +49,31 @@
                         </section>
 
                         <section class="panel-section">
+                            <h2>Symmetry</h2>
+                            <div class="control-group" style="display: flex; flex-direction: column; gap: 8px;">
+                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-color); font-size: 0.9rem;">
+                                    <input type="checkbox" id="symmetry-h" style="width: 16px; height: 16px; accent-color: var(--primary-color);">
+                                    Horizontal Mirror
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-color); font-size: 0.9rem;">
+                                    <input type="checkbox" id="symmetry-v" style="width: 16px; height: 16px; accent-color: var(--primary-color);">
+                                    Vertical Mirror
+                                </label>
+                            </div>
+                        </section>
+
+                        <section class="panel-section">
                             <h2>Tools</h2>
-                            <div class="hint">Hold <b>ALT</b> while using Brush to delete blocks.</div>
+
                             <div class="tool-group">
                                 <button id="tool-brush" class="tool-btn active"
                                     title="Brush (B)">
                                     <i class="material-icons">brush</i>
                                     <span>Brush (B)</span>
                                 </button>
-                                <button id="tool-select" class="tool-btn" title="Select (W)">
+                                <button id="tool-select" class="tool-btn" title="Select (M)">
                                     <i class="material-icons">select_all</i>
-                                    <span>Select (W)</span>
+                                    <span>Select (M)</span>
                                 </button>
                                 <button id="tool-picker" class="tool-btn"
                                     title="Color Picker (Click on any pixel to copy its color)">
@@ -76,6 +82,8 @@
                                 </button>
                             </div>
                         </section>
+
+
                     </aside>
 
                     <!-- CENTER: Canvas & Palette -->
@@ -92,6 +100,10 @@
                                 </div>
 
                                 <div class="palette-footer">
+                                    <label id="diff-toggle-container" style="display: none; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer; margin-bottom: 12px; color: var(--text-color);">
+                                        <input type="checkbox" id="show-diff-numbers" checked style="width: 14px; height: 14px; accent-color: var(--primary-color);">
+                                        Show Diffs
+                                    </label>
                                     <button class="btn-add-color-trigger icon-only" title="Add New Color">
                                         <i class="material-icons">add</i>
                                     </button>
@@ -118,6 +130,20 @@
                                 <label>Selected Item HP: <span id="block-hp-val">1</span></label>
                                 <input type="range" id="block-hp-slider" min="1" max="100" value="1">
                             </div>
+                            <div id="selection-actions" class="button-row">
+                                <button id="btn-copy-selection" class="btn secondary" title="Copy selection">
+                                    <i class="material-icons">content_copy</i>
+                                    <span>COPY</span>
+                                </button>
+                                <button id="btn-mirror-h" class="btn secondary" title="Mirror horizontally">
+                                    <i class="material-icons">flip</i>
+                                    <span>MIRROR H</span>
+                                </button>
+                                <button id="btn-mirror-v" class="btn secondary" title="Mirror vertically">
+                                    <i class="material-icons" style="transform: rotate(90deg);">flip</i>
+                                    <span>MIRROR V</span>
+                                </button>
+                            </div>
                             <div id="key-size-container" class="hidden">
                                 <div class="key-control-row">
                                     <label>Key Width: <span id="key-w-val">1</span></label>
@@ -140,6 +166,7 @@
                             <h2>JSON Output</h2>
                             <div class="button-row">
                                 <button id="btn-generate-json" class="btn primary">Generate JSON</button>
+                                <button id="btn-generate-copy-json" class="btn primary">Generate & Copy</button>
                                 <button id="btn-copy-json" class="btn secondary">Copy</button>
                                 <button id="btn-load-json" class="btn secondary" style="background:#3b82f6; border-color:#3b82f6; color:#fff;">Load JSON</button>
                                 <button id="btn-expand-json" class="btn outline icon-only" title="Toggle Height">
@@ -164,6 +191,16 @@
                             </div>
                             <!-- Existing saves injected here -->
                         </div>
+
+                         <!-- Relocated Auth Section -->
+                        <div class="auth-section-bottom">
+                            <div id="user-info" class="hidden">
+                                <img id="user-avatar" src="" alt="Avatar">
+                                <span id="user-name" style="font-size: 0.9rem; font-weight: 500;">User</span>
+                                <button id="btn-logout" class="btn outline" style="margin-top: 8px; width: 100%;">Logout</button>
+                            </div>
+                            <button id="btn-login" class="btn primary">Login with Google</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -173,17 +210,22 @@
                 <section class="panel-section">
                     <h2>Warehouse Units</h2>
 
-                    <div class="control-group">
+                    <div class="control-group" style="margin-bottom: 12px;">
                         <label>Columns: <span id="unit-cols-val">3</span></label>
                         <input type="range" id="unit-cols" min="1" max="10" value="3">
                     </div>
-                    <div class="control-group">
-                        <label>Max Ammo per Unit: <span id="unit-max-ammo-val">20</span></label>
-                        <input type="range" id="unit-max-ammo" min="1" max="50" value="20">
+
+                    <div class="control-group" style="margin-bottom: 12px;">
+                        <label>Max Ammo: <span id="unit-max-ammo-val">20</span></label>
+                        <input type="range" id="unit-max-ammo" min="5" max="100" step="5" value="20">
+                    </div>
+
+                    <div style="margin-bottom: 12px;">
+                        <button id="btn-create-units" class="btn primary full-width">Create Units</button>
                     </div>
 
                     <div class="button-row">
-                        <button id="btn-create-units" class="btn primary flex-grow">Create Units</button>
+                        <button id="btn-add-missing" class="btn secondary flex-grow">Equalize</button>
                         <button id="btn-add-unit" class="btn secondary icon-only" title="Add Single Unit">
                             <span class="material-icons-rounded">add</span>
                         </button>
@@ -221,9 +263,18 @@
                             </label>
                         </div>
                         
+                        <div id="unit-color-control" class="control-group" style="margin-top: 8px;">
+                            <label>Color:</label>
+                            <div id="unit-color-selector" style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px;"></div>
+                        </div>
+
                         <div id="unit-links-control" class="control-group" style="margin-top: 8px;">
                             <label>Links:</label>
                             <div id="unit-links-list" class="links-list" style="display: flex; gap: 4px; flex-wrap: wrap;"></div>
+                        </div>
+                        
+                        <div class="button-row" style="margin-top: 15px;">
+                            <button id="btn-delete-unit" class="btn outline flex-grow" style="border-color: #ef4444; color: #ef4444;">Delete Unit</button>
                         </div>
                     </div>
                 </section>
@@ -234,6 +285,55 @@
     </div>
 
     <div id="cursor-follower" class="cursor-follower"></div>
+
+    <!-- Help Modal -->
+    <div id="help-modal" class="modal-overlay hidden">
+        <div class="modal-content glass-panel">
+            <div class="modal-header">
+                <h2>Инструкция редактора</h2>
+                <button id="btn-close-help" class="btn secondary icon-only"><i class="material-icons">close</i></button>
+            </div>
+            <div class="modal-body">
+                <div class="help-grid">
+                    <div class="help-group">
+                        <h3><i class="material-icons">keyboard</i> Горячие клавиши</h3>
+                        <ul>
+                            <li><b>B</b> — Кисть (Brush)</li>
+                            <li><b>M</b> — Выделение (Select)</li>
+                            <li><b>I</b> — Пипетка (Picker)</li>
+                            <li><b>Del</b> — Удалить выбранное</li>
+                            <li><b>1 - 9</b> — Быстрый выбор цвета из палитры</li>
+                        </ul>
+                    </div>
+                    <div class="help-group">
+                        <h3><i class="material-icons">brush</i> Рисование</h3>
+                        <ul>
+                            <li><b>Alt + ЛКМ</b> — Стирание блоков (или ПКМ)</li>
+                            <li><b>Ctrl + ЛКМ</b> — Быстро взять цвет с холста</li>
+                            <li><b>Symmetry</b> — Режим зеркального рисования (H/V)</li>
+                        </ul>
+                    </div>
+                    <div class="help-group">
+                        <h3><i class="material-icons">select_all</i> Выделение</h3>
+                        <ul>
+                            <li><b>Shift + Тянуть</b> — Добавить к выделению</li>
+                            <li><b>Alt + Тянуть</b> — Убрать из выделения</li>
+                            <li><b>COPY</b> — Нажмите, затем тяните выделение для копирования</li>
+                        </ul>
+                    </div>
+                    <div class="help-group">
+                        <h3><i class="material-icons">category</i> Юниты (Склад)</h3>
+                        <ul>
+                            <li><b>Drag & Drop</b> — Свободное перемещение между колонками</li>
+                            <li><b>Link Mode</b> — Тяните линию между юнитами для связи</li>
+                            <li><b>Equalize</b> — Балансировка патронов под HP блоков</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Script loading -->
     <script type="module" src="firebase.js"></script>
     <script type="module" src="script.js"></script>

@@ -23,12 +23,14 @@ let selectedUnitInfo = null; // { colIndex, unitIndex }
 
 let isDrawing = false;
 let drawMode = 'draw'; // 'draw' or 'erase' (alt pressed)
+let hoverCoords = null;
 
 let selectedBlocks = []; // array of {x, y}
 let selectedKeys = []; // array of {x, y}
 let marqueeStartCoords = null;
 let currentMouseCoords = null;
 let isDraggingSelection = false;
+let isCopyingSelection = false;
 let selectionDragVisualOffset = { dx: 0, dy: 0 };
 let dragStartCoords = null;
 
@@ -62,6 +64,8 @@ const elements = {
     btnToggleGrid: document.getElementById('btn-toggle-grid-slider'),
     gridSliderPopup: document.getElementById('grid-slider-popup'),
     gridSizeValBtn: document.getElementById('grid-size-val-btn'),
+    symmetryH: document.getElementById('symmetry-h'),
+    symmetryV: document.getElementById('symmetry-v'),
 
     // Palette
     paletteList: document.querySelector('.palette-list'),
@@ -69,6 +73,8 @@ const elements = {
     btnAddColor: document.querySelector('.btn-add-color-trigger'),
     palettePanel: document.querySelector('.compact-palette-panel'),
     btnExpandPalette: document.querySelector('.btn-palette-expand'),
+    showDiffNumbers: document.getElementById('show-diff-numbers'),
+    diffToggleContainer: document.getElementById('diff-toggle-container'),
 
     // HP Tool / Key Tool
     hpPanel: document.getElementById('hp-control-panel'),
@@ -87,9 +93,13 @@ const elements = {
     unitMaxAmmoSlider: document.getElementById('unit-max-ammo'),
     unitMaxAmmoVal: document.getElementById('unit-max-ammo-val'),
     btnCreateUnits: document.getElementById('btn-create-units'),
+    btnAddMissing: document.getElementById('btn-add-missing'),
     btnAddUnit: document.getElementById('btn-add-unit'),
     btnShuffleUnits: document.getElementById('btn-shuffle-units'),
     btnLinkMode: document.getElementById('btn-link-mode'),
+    btnCopySelection: document.getElementById('btn-copy-selection'),
+    btnMirrorH: document.getElementById('btn-mirror-h'),
+    btnMirrorV: document.getElementById('btn-mirror-v'),
     warehouseContainer: document.getElementById('warehouse-columns'),
     linksSvg: document.getElementById('links-svg'),
     unitAmmoControl: document.getElementById('unit-ammo-control'),
@@ -97,12 +107,15 @@ const elements = {
     unitAmmoVal: document.getElementById('unit-ammo-val'),
     unitIsHidden: document.getElementById('unit-is-hidden'),
     unitIsBarnLock: document.getElementById('unit-is-barn-lock'),
+    unitColorSelector: document.getElementById('unit-color-selector'),
     unitLinksControl: document.getElementById('unit-links-control'),
     unitLinksList: document.getElementById('unit-links-list'),
+    btnDeleteUnit: document.getElementById('btn-delete-unit'),
 
     // Bottom Out
     jsonOutput: document.getElementById('json-output'),
     btnGenerateJson: document.getElementById('btn-generate-json'),
+    btnGenerateCopyJson: document.getElementById('btn-generate-copy-json'),
     btnCopyJson: document.getElementById('btn-copy-json'),
     btnLoadJson: document.getElementById('btn-load-json'),
     btnExpandJson: document.getElementById('btn-expand-json'),
@@ -116,11 +129,14 @@ const elements = {
     userName: document.getElementById('user-name'),
     userAvatar: document.getElementById('user-avatar'),
     loginHint: document.getElementById('login-hint'),
-    cursorFollower: document.getElementById('cursor-follower')
+    cursorFollower: document.getElementById('cursor-follower'),
+    btnShowHelp: document.getElementById('btn-show-help'),
+    btnCloseHelp: document.getElementById('btn-close-help'),
+    helpModal: document.getElementById('help-modal')
 };
 
 // --- INITIALIZATION ---
-let CELL_SIZE_PX = 32;
+let CELL_SIZE_PX = 16; 
 
 function init() {
     bindEvents();
@@ -146,10 +162,50 @@ function bindEvents() {
         if (e.code === 'KeyB') {
             setTool('brush');
         }
-        if (e.code === 'KeyW') {
+        if (e.code === 'KeyM') {
             setTool('select');
         }
+
+        // Color Palette Hotkeys (1-9, 0)
+        if (e.key >= '1' && e.key <= '9') {
+            const idx = parseInt(e.key) - 1;
+            if (state.colors[idx]) selectColorById(state.colors[idx].id);
+        } else if (e.key === '0') {
+            if (state.colors[9]) selectColorById(state.colors[9].id);
+        }
+
+        if (e.code === 'Delete') {
+            let changed = false;
+            // Delete selected blocks
+            if (selectedBlocks.length > 0) {
+                selectedBlocks.forEach(pos => {
+                    state.blocks.delete(`${pos.x},${pos.y}`);
+                });
+                selectedBlocks = [];
+                changed = true;
+            }
+            // Delete selected keys
+            if (selectedKeys.length > 0) {
+                selectedKeys.forEach(pos => {
+                    state.keys.delete(`${pos.x},${pos.y}`);
+                });
+                selectedKeys = [];
+                changed = true;
+            }
+            
+            if (changed) {
+                renderCanvas();
+                updatePaletteStats();
+                showControlPanels();
+            }
+
+            // Delete selected unit
+            if (selectedUnitInfo) {
+                elements.btnDeleteUnit.click();
+            }
+        }
     });
+
     window.addEventListener('keyup', (e) => {
         if (e.key === 'Alt' || !e.altKey) {
             document.body.classList.remove('alt-pressed');
@@ -168,16 +224,30 @@ function bindEvents() {
     window.addEventListener('mouseup', onCanvasMouseUp);
     window.addEventListener('resize', fitCanvas);
 
+    elements.canvas.addEventListener('mousedown', (e) => {
+        if (e.button === 1) e.preventDefault(); // Prevent middle-click scroll
+    });
+
     elements.canvas.addEventListener('contextmenu', e => e.preventDefault()); // Prevent right click
 
-    // Board Settings
     elements.gridSizeSlider.addEventListener('input', (e) => {
         state.gridSize = parseInt(e.target.value);
         elements.gridSizeVal.textContent = state.gridSize;
         elements.gridSizeValBtn.textContent = state.gridSize;
         trimBlocks();
-        fitCanvas();
-        renderCanvas();
+        
+        const wrapper = elements.canvas.parentElement;
+        if (wrapper) {
+            const availW = wrapper.clientWidth - 48;
+            const availH = wrapper.clientHeight - 72;
+            const curW = state.gridSize * CELL_SIZE_PX;
+            if (curW > availW || curW > availH) {
+                fitCanvas();
+            } else {
+                resizeCanvas();
+                renderCanvas();
+            }
+        }
     });
 
     elements.btnToggleGrid.addEventListener('click', () => {
@@ -192,6 +262,9 @@ function bindEvents() {
             elements.gridSliderPopup.classList.remove('show');
         }
     });
+
+    elements.symmetryH.addEventListener('change', () => renderCanvas());
+    elements.symmetryV.addEventListener('change', () => renderCanvas());
 
     // Tools
     elements.btnBrush.addEventListener('click', () => setTool('brush'));
@@ -258,6 +331,19 @@ function bindEvents() {
 
     elements.btnExpandPalette.addEventListener('click', () => {
         elements.palettePanel.classList.toggle('expanded');
+        if (elements.palettePanel.classList.contains('expanded')) {
+            elements.diffToggleContainer.style.display = 'flex';
+        } else {
+            elements.diffToggleContainer.style.display = 'none';
+        }
+    });
+
+    elements.showDiffNumbers.addEventListener('change', (e) => {
+        if (e.target.checked) {
+            document.body.classList.remove('hide-diffs');
+        } else {
+            document.body.classList.add('hide-diffs');
+        }
     });
 
     // Make native picker dynamically update the active color!
@@ -274,9 +360,26 @@ function bindEvents() {
 
     // Units
     elements.unitColsSlider.addEventListener('input', (e) => {
-        state.unitColsCount = parseInt(e.target.value);
-        elements.unitColsVal.textContent = state.unitColsCount;
-        initWarehouseCols();
+        const newCount = parseInt(e.target.value);
+        state.unitColsCount = newCount;
+        elements.unitColsVal.textContent = newCount;
+        
+        if (!state.warehouseColumns) state.warehouseColumns = [];
+        if (newCount > state.warehouseColumns.length) {
+            const diff = newCount - state.warehouseColumns.length;
+            for (let i = 0; i < diff; i++) {
+                state.warehouseColumns.push([]);
+            }
+        } else if (newCount < state.warehouseColumns.length) {
+            const removedCols = state.warehouseColumns.splice(newCount);
+            if (state.warehouseColumns.length === 0) {
+               state.warehouseColumns.push([]);
+            }
+            removedCols.forEach(col => {
+                state.warehouseColumns[0].push(...col);
+            });
+        }
+        renderWarehouse();
     });
 
     elements.unitMaxAmmoSlider.addEventListener('input', (e) => {
@@ -284,7 +387,10 @@ function bindEvents() {
         elements.unitMaxAmmoVal.textContent = state.unitMaxAmmo;
     });
 
+
+
     elements.btnCreateUnits.addEventListener('click', createUnits);
+    elements.btnAddMissing.addEventListener('click', addMissingUnits);
     elements.btnAddUnit.addEventListener('click', addUnit);
     elements.btnShuffleUnits.addEventListener('click', shuffleUnits);
     elements.btnLinkMode.addEventListener('click', () => {
@@ -322,13 +428,40 @@ function bindEvents() {
             const { colIndex, unitIndex } = selectedUnitInfo;
             if (state.warehouseColumns[colIndex] && state.warehouseColumns[colIndex][unitIndex]) {
                 state.warehouseColumns[colIndex][unitIndex].IsBarnLock = e.target.checked;
+                updatePaletteStats();
                 renderWarehouse();
+            }
+        }
+    });
+
+    elements.btnDeleteUnit.addEventListener('click', () => {
+        if (selectedUnitInfo) {
+            const { colIndex, unitIndex } = selectedUnitInfo;
+            if (state.warehouseColumns[colIndex] && state.warehouseColumns[colIndex][unitIndex]) {
+                const unit = state.warehouseColumns[colIndex][unitIndex];
+                
+                // remove links to this unit
+                state.warehouseColumns.forEach(c => c.forEach(u => {
+                    if (u.Lnk) u.Lnk = u.Lnk.filter(id => id !== unit.id);
+                }));
+
+                // remove unit
+                state.warehouseColumns[colIndex].splice(unitIndex, 1);
+                
+                selectedUnitInfo = null;
+                elements.unitAmmoControl.classList.add('hidden');
+                renderWarehouse();
+                updatePaletteStats();
             }
         }
     });
 
     // JSON
     elements.btnGenerateJson.addEventListener('click', generateJson);
+    elements.btnGenerateCopyJson.addEventListener('click', () => {
+        generateJson();
+        elements.btnCopyJson.click();
+    });
     elements.btnCopyJson.addEventListener('click', () => {
         navigator.clipboard.writeText(elements.jsonOutput.value);
         elements.btnCopyJson.textContent = "Copied!";
@@ -359,6 +492,60 @@ function bindEvents() {
             icon.textContent = 'expand';
         }
     });
+
+    elements.btnCopySelection.addEventListener('click', () => {
+        if (selectedBlocks.length === 0 && selectedKeys.length === 0) return;
+        isCopyingSelection = !isCopyingSelection; // Toggle
+        updateCopyButtonUI();
+    });
+
+    elements.btnMirrorH.addEventListener('click', () => mirrorSelection('horizontal'));
+    elements.btnMirrorV.addEventListener('click', () => mirrorSelection('vertical'));
+
+    // Help Modal
+    elements.btnShowHelp.addEventListener('click', () => elements.helpModal.classList.remove('hidden'));
+    elements.btnCloseHelp.addEventListener('click', () => elements.helpModal.classList.add('hidden'));
+    elements.helpModal.addEventListener('click', (e) => {
+        if (e.target === elements.helpModal) elements.helpModal.classList.add('hidden');
+    });
+}
+
+function selectColorById(colorId) {
+    const color = state.colors.find(c => c.id === colorId);
+    if (!color) return;
+    
+    selectedColorId = colorId;
+    elements.newColorInput.value = color.hex;
+
+    if (currentTool === 'select' && selectedBlocks.length > 0) {
+        selectedBlocks.forEach(p => {
+            const b = state.blocks.get(`${p.x},${p.y}`);
+            if (b) b.col = colorId;
+        });
+        renderCanvas();
+        updatePaletteStats();
+    } else {
+        renderPalette();
+        updateCursorFollowerColor();
+    }
+}
+
+function updateCopyButtonUI() {
+    const btn = elements.btnCopySelection;
+    if (!btn) return;
+    const span = btn.querySelector('span');
+    const icon = btn.querySelector('.material-icons');
+    if (isCopyingSelection) {
+        btn.classList.add('primary');
+        btn.classList.remove('secondary');
+        span.textContent = 'READY TO PASTE';
+        icon.textContent = 'content_paste';
+    } else {
+        btn.classList.remove('primary');
+        btn.classList.add('secondary');
+        span.textContent = 'COPY';
+        icon.textContent = 'content_copy';
+    }
 }
 
 // --- CANVAS & DRAWING ---
@@ -371,9 +558,8 @@ function fitCanvas() {
     const wrapper = elements.canvas.parentElement;
     if (!wrapper) return;
 
-    const padding = 48; // Space around the canvas
-    const availW = wrapper.clientWidth - padding;
-    const availH = wrapper.clientHeight - padding;
+    const availW = wrapper.clientWidth - 48;
+    const availH = wrapper.clientHeight - 72;
 
     CELL_SIZE_PX = Math.min(availW, availH) / state.gridSize;
     resizeCanvas();
@@ -401,9 +587,25 @@ function getGridCoords(e) {
 
 function onCanvasMouseDown(e) {
     const isRightClick = e.button === 2;
-    if (e.button !== 0 && !isRightClick && currentTool !== 'picker') return;
+    const isMiddleClick = e.button === 1;
 
     const coords = getGridCoords(e);
+    
+    if (coords && (e.ctrlKey || isMiddleClick) && ['brush', 'select', 'hp'].includes(currentTool)) {
+        performPick(coords, e);
+        return;
+    }
+
+    // Clear unit selection when interacting with canvas
+    if (selectedUnitInfo) {
+        selectedUnitInfo = null;
+        elements.unitAmmoControl.classList.add('hidden');
+        renderWarehouse();
+    }
+
+
+    if (e.button !== 0 && !isRightClick && !isMiddleClick && currentTool !== 'picker') return;
+
     if (!coords) {
         if (currentTool === 'select' && !isRightClick) {
             selectedBlocks = [];
@@ -432,12 +634,14 @@ function onCanvasMouseDown(e) {
             marqueeStartCoords = coords;
             currentMouseCoords = coords;
             isDraggingSelection = false;
+            isCopyingSelection = false;
         } else {
             // Normal click
             if (clickedOnSelectedBlock || clickedOnSelectedKey) {
                 isDraggingSelection = true;
                 dragStartCoords = coords;
             } else {
+                isCopyingSelection = false; 
                 if (state.blocks.has(`${coords.x},${coords.y}`)) {
                     selectedBlocks = [{ x: coords.x, y: coords.y }];
                     selectedKeys = [];
@@ -457,39 +661,14 @@ function onCanvasMouseDown(e) {
             }
         }
 
+        updateCopyButtonUI();
         showControlPanels();
         renderCanvas();
         return;
     }
 
     if (currentTool === 'picker') {
-        const keyStr = `${coords.x},${coords.y}`;
-        const b = state.blocks.get(keyStr);
-        const k = state.keys.get(keyStr);
-
-        if (b) {
-            selectedColorId = b.col;
-            elements.newColorInput.value = state.colors.find(c => c.id === selectedColorId).hex;
-            setTool('brush');
-            renderPalette();
-        } else if (k) {
-            selectedColorId = 'key';
-            setTool('brush');
-            renderPalette();
-        } else {
-            const rect = elements.canvas.getBoundingClientRect();
-            const px = Math.floor((e.clientX - rect.left) * (elements.canvas.width / rect.width));
-            const py = Math.floor((e.clientY - rect.top) * (elements.canvas.height / rect.height));
-            const imgData = elements.ctx.getImageData(px, py, 1, 1).data;
-            const hex = rgbToHex(imgData[0], imgData[1], imgData[2]);
-            let c = state.colors.find(col => col.hex.toLowerCase() === hex.toLowerCase());
-            if (c) {
-                selectedColorId = c.id;
-                elements.newColorInput.value = c.hex;
-            }
-            setTool('brush');
-            renderPalette();
-        }
+        performPick(coords, e);
         return;
     }
 
@@ -516,9 +695,64 @@ function onCanvasMouseMove(e) {
         return;
     }
 
-    if (!isDrawing) return;
+    if (!isDrawing) {
+        const coords = getGridCoords(e);
+        if (coords && currentTool === 'brush') {
+            const hasSymH = elements.symmetryH.checked;
+            const hasSymV = elements.symmetryV.checked;
+            const isDeadH = hasSymH && coords.x > (state.gridSize - 1) / 2;
+            const isDeadV = hasSymV && coords.y < (state.gridSize - 1) / 2;
+            
+            if (!isDeadH && !isDeadV) {
+                if (!hoverCoords || hoverCoords.x !== coords.x || hoverCoords.y !== coords.y) {
+                    hoverCoords = coords;
+                    renderCanvas();
+                }
+            } else if (hoverCoords) {
+                hoverCoords = null;
+                renderCanvas();
+            }
+        } else if (hoverCoords) {
+            hoverCoords = null;
+            renderCanvas();
+        }
+        return;
+    }
     const coords = getGridCoords(e);
     if (coords) applyBrush(coords);
+}
+
+function performPick(coords, e) {
+    const keyStr = `${coords.x},${coords.y}`;
+    const b = state.blocks.get(keyStr);
+    const k = state.keys.get(keyStr);
+
+    if (b) {
+        selectedColorId = b.col;
+        elements.newColorInput.value = state.colors.find(c => c.id === selectedColorId).hex;
+        setTool('brush');
+        renderPalette();
+        updateCursorFollowerColor();
+    } else if (k) {
+        selectedColorId = 'key';
+        setTool('brush');
+        renderPalette();
+        updateCursorFollowerColor();
+    } else {
+        const rect = elements.canvas.getBoundingClientRect();
+        const px = Math.floor((e.clientX - rect.left) * (elements.canvas.width / rect.width));
+        const py = Math.floor((e.clientY - rect.top) * (elements.canvas.height / rect.height));
+        const imgData = elements.ctx.getImageData(px, py, 1, 1).data;
+        const hex = rgbToHex(imgData[0], imgData[1], imgData[2]);
+        let c = state.colors.find(col => col.hex.toLowerCase() === hex.toLowerCase());
+        if (c) {
+            selectedColorId = c.id;
+            elements.newColorInput.value = c.hex;
+        }
+        setTool('brush');
+        renderPalette();
+        updateCursorFollowerColor();
+    }
 }
 
 function onCanvasMouseUp(e) {
@@ -533,10 +767,15 @@ function onCanvasMouseUp(e) {
                     const b = state.blocks.get(key);
                     if (b) newBlocksObj.push({ oldPos: pos, newPos: { x: pos.x + dx, y: pos.y + dy }, b: b });
                 });
-                newBlocksObj.forEach(obj => state.blocks.delete(`${obj.oldPos.x},${obj.oldPos.y}`));
+                
+                if (!isCopyingSelection) {
+                    newBlocksObj.forEach(obj => state.blocks.delete(`${obj.oldPos.x},${obj.oldPos.y}`));
+                }
+
                 newBlocksObj.forEach(obj => {
                     if (obj.newPos.x >= 0 && obj.newPos.x < state.gridSize && obj.newPos.y >= 0 && obj.newPos.y < state.gridSize) {
-                        state.blocks.set(`${obj.newPos.x},${obj.newPos.y}`, obj.b);
+                        const blockData = isCopyingSelection ? { ...obj.b } : obj.b;
+                        state.blocks.set(`${obj.newPos.x},${obj.newPos.y}`, blockData);
                     }
                 });
                 selectedBlocks = newBlocksObj.map(obj => obj.newPos).filter(p => p.x >= 0 && p.x < state.gridSize && p.y >= 0 && p.y < state.gridSize);
@@ -547,15 +786,22 @@ function onCanvasMouseUp(e) {
                     const k = state.keys.get(key);
                     if (k) newKeysObj.push({ oldPos: pos, newPos: { x: pos.x + dx, y: pos.y + dy }, k: k });
                 });
-                newKeysObj.forEach(obj => state.keys.delete(`${obj.oldPos.x},${obj.oldPos.y}`));
+
+                if (!isCopyingSelection) {
+                    newKeysObj.forEach(obj => state.keys.delete(`${obj.oldPos.x},${obj.oldPos.y}`));
+                }
+
                 newKeysObj.forEach(obj => {
                     if (obj.newPos.x >= 0 && obj.newPos.x < state.gridSize && obj.newPos.y >= 0 && obj.newPos.y < state.gridSize) {
-                        state.keys.set(`${obj.newPos.x},${obj.newPos.y}`, obj.k);
+                        const keyData = isCopyingSelection ? { ...obj.k } : obj.k;
+                        state.keys.set(`${obj.newPos.x},${obj.newPos.y}`, keyData);
                     }
                 });
                 selectedKeys = newKeysObj.map(obj => obj.newPos).filter(p => p.x >= 0 && p.x < state.gridSize && p.y >= 0 && p.y < state.gridSize);
 
                 updatePaletteStats();
+                isCopyingSelection = false;
+                updateCopyButtonUI();
             }
             isDraggingSelection = false;
             selectionDragVisualOffset = { dx: 0, dy: 0 };
@@ -646,22 +892,53 @@ function showControlPanels() {
 }
 
 function applyBrush(coords) {
-    const keyStr = `${coords.x},${coords.y}`;
-    if (drawMode === 'erase') {
-        state.blocks.delete(keyStr);
-        state.keys.delete(keyStr);
-    } else {
-        if (selectedColorId === 'key') {
-            if (!state.keys.has(keyStr)) {
-                state.keys.set(keyStr, { w: 1, h: 1 });
-                // Optional: state.blocks.delete(keyStr); if we want keys to override blocks
-            }
-        } else {
-            if (!state.colors.find(c => c.id === selectedColorId)) return;
-            state.blocks.set(keyStr, { col: selectedColorId, hp: parseInt(elements.hpSlider.value) });
-            // Optional: state.keys.delete(keyStr); if blocks override keys
-        }
+    const s = state.gridSize;
+    const hasSymH = elements.symmetryH.checked;
+    const hasSymV = elements.symmetryV.checked;
+
+    // Check dead zones
+    // Horizontal mirror (vertical axis): Drawable if x <= (s-1)/2
+    if (hasSymH && coords.x > (s - 1) / 2) return;
+    // Vertical mirror (horizontal axis): Drawable if y >= (s-1)/2 (top half)
+    if (hasSymV && coords.y < (s - 1) / 2) return;
+
+    let targets = [coords];
+
+    if (hasSymH) {
+        let mirrored = [];
+        targets.forEach(t => {
+            const mx = s - 1 - t.x;
+            if (mx !== t.x) mirrored.push({ x: mx, y: t.y });
+        });
+        targets.push(...mirrored);
     }
+
+    if (hasSymV) {
+        let mirrored = [];
+        targets.forEach(t => {
+            const my = s - 1 - t.y;
+            if (my !== t.y) mirrored.push({ x: t.x, y: my });
+        });
+        targets.push(...mirrored);
+    }
+
+    targets.forEach(t => {
+        const keyStr = `${t.x},${t.y}`;
+        if (drawMode === 'erase') {
+            state.blocks.delete(keyStr);
+            state.keys.delete(keyStr);
+        } else {
+            if (selectedColorId === 'key') {
+                if (!state.keys.has(keyStr)) {
+                    state.keys.set(keyStr, { w: 1, h: 1 });
+                }
+            } else {
+                if (!state.colors.find(c => c.id === selectedColorId)) return;
+                state.blocks.set(keyStr, { col: selectedColorId, hp: parseInt(elements.hpSlider.value) });
+            }
+        }
+    });
+    
     renderCanvas();
 }
 
@@ -704,6 +981,35 @@ function renderCanvas() {
         ctx.beginPath(); ctx.moveTo(0, i * cs); ctx.lineTo(w, i * cs); ctx.stroke();
     }
 
+    // Draw Symmetry Dead Zones & Axes
+    if (elements.symmetryH.checked || elements.symmetryV.checked) {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+        
+        if (elements.symmetryH.checked) {
+            const startX = Math.floor((s + 1) / 2);
+            ctx.fillRect(startX * cs, 0, (s - startX) * cs, h);
+        }
+        
+        if (elements.symmetryV.checked) {
+            const deadHeight = Math.floor(s / 2);
+            ctx.fillRect(0, (s - deadHeight) * cs, w, deadHeight * cs);
+        }
+
+        // Draw symmetry axes lines
+        ctx.setLineDash([8, 4]);
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+        ctx.lineWidth = 1.5;
+        if (elements.symmetryH.checked) {
+            const centerX = (s / 2) * cs;
+            ctx.beginPath(); ctx.moveTo(centerX, 0); ctx.lineTo(centerX, h); ctx.stroke();
+        }
+        if (elements.symmetryV.checked) {
+            const centerY = (s / 2) * cs;
+            ctx.beginPath(); ctx.moveTo(0, centerY); ctx.lineTo(w, centerY); ctx.stroke();
+        }
+        ctx.setLineDash([]);
+    }
+
     // Draw Blocks
     const drawBlock = (b, key, isSelected) => {
         const [x, y] = key.split(',').map(Number);
@@ -739,11 +1045,17 @@ function renderCanvas() {
 
         // Draw HP
         if (b.hp > 1) {
-            ctx.fillStyle = getContrastColor(colDef.hex); // white or black
-            ctx.font = 'bold 12px Outfit';
+            ctx.fillStyle = getContrastColor(colDef.hex); 
+            const fontSize = Math.floor(cs * 0.45);
+            ctx.font = `bold ${fontSize}px Arial`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
+            
+            // Draw text with a very subtle shadow for extra crispness
+            ctx.shadowColor = 'rgba(0,0,0,0.3)';
+            ctx.shadowBlur = 1;
             ctx.fillText(b.hp.toString(), drawX * cs + cs / 2, ry * cs + cs / 2 + 1);
+            ctx.shadowBlur = 0;
         }
     };
 
@@ -751,7 +1063,9 @@ function renderCanvas() {
     state.blocks.forEach((b, key) => {
         const [x, y] = key.split(',').map(Number);
         const isSelected = selectedBlocks.find(p => p.x === x && p.y === y) !== undefined;
-        if (!isSelected) drawBlock(b, key, isSelected);
+        if (!isSelected || (isDraggingSelection && isCopyingSelection)) {
+            drawBlock(b, key, false);
+        }
     });
 
     state.blocks.forEach((b, key) => {
@@ -803,7 +1117,7 @@ function renderCanvas() {
     state.keys.forEach((k, keyStr) => {
         const [x, y] = keyStr.split(',').map(Number);
         const isSelected = selectedKeys.find(p => p.x === x && p.y === y) !== undefined;
-        if (!isSelected) drawKeyObj(k, keyStr, isSelected);
+        if (!isSelected || (isDraggingSelection && isCopyingSelection)) drawKeyObj(k, keyStr, false);
     });
 
     state.keys.forEach((k, keyStr) => {
@@ -828,6 +1142,13 @@ function renderCanvas() {
         ctx.strokeRect(minX * cs, ryMin * cs, (maxX - minX + 1) * cs, (maxY - minY + 1) * cs);
         ctx.setLineDash([]);
     }
+
+    // Draw hover outline
+    if (hoverCoords && currentTool === 'brush' && !isDrawing) {
+        const ry = s - 1 - hoverCoords.y;
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+        ctx.fillRect(hoverCoords.x * cs, ry * cs, cs, cs);
+    }
 }
 
 // --- TOOLS ---
@@ -838,17 +1159,18 @@ function setTool(tool) {
     elements.btnBrush.classList.toggle('active', tool === 'brush');
     elements.btnSelect.classList.toggle('active', tool === 'select');
     elements.btnPicker.classList.toggle('active', tool === 'picker');
-    document.body.classList.toggle('brush-tool', tool === 'brush');
+    
+    document.body.classList.remove('brush-tool', 'select-tool', 'picker-tool');
+    document.body.classList.add(`${tool}-tool`);
 
     // Cursor handling
-    if (tool === 'picker') {
+    if (['brush', 'picker', 'select'].includes(tool)) {
         document.body.style.cursor = 'crosshair';
-    } else if (tool === 'brush') {
-        document.body.style.cursor = 'crosshair';
-        updateCursorFollowerColor();
+        if (tool === 'brush') updateCursorFollowerColor();
     } else {
         document.body.style.cursor = 'default';
     }
+
 
     if (tool !== 'select') {
         selectedBlocks = [];
@@ -870,8 +1192,43 @@ function updateCursorFollower(e) {
     if (elements.cursorFollower) {
         elements.cursorFollower.style.left = e.clientX + 'px';
         elements.cursorFollower.style.top = e.clientY + 'px';
+        
+        const isToolActive = ['brush', 'select', 'picker'].includes(currentTool);
+        elements.cursorFollower.style.display = isToolActive ? 'flex' : 'none';
+
+        if (isToolActive) {
+            if (currentTool === 'brush') {
+                elements.cursorFollower.innerHTML = '';
+                elements.cursorFollower.style.width = '12px';
+                elements.cursorFollower.style.height = '12px';
+                elements.cursorFollower.style.border = '1px solid rgba(255, 255, 255, 0.5)';
+                elements.cursorFollower.style.borderRadius = '2px';
+                elements.cursorFollower.style.boxShadow = '0 0 5px rgba(0, 0, 0, 0.5)';
+                updateCursorFollowerColor();
+            } else if (currentTool === 'picker' || currentTool === 'select') {
+                const icon = currentTool === 'picker' ? 'colorize' : 'crop_free';
+                elements.cursorFollower.innerHTML = `<i class="material-icons" style="font-size: 18px; color: white; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">${icon}</i>`;
+                elements.cursorFollower.style.backgroundColor = 'transparent';
+                elements.cursorFollower.style.border = 'none';
+                elements.cursorFollower.style.boxShadow = 'none';
+                elements.cursorFollower.style.width = '20px';
+                elements.cursorFollower.style.height = '20px';
+            }
+        }
+
+        if (e.ctrlKey && ['brush', 'select', 'hp'].includes(currentTool)) {
+            elements.cursorFollower.innerHTML = '';
+            elements.cursorFollower.style.backgroundColor = 'transparent';
+            elements.cursorFollower.style.border = '2px solid white';
+            elements.cursorFollower.style.width = '12px';
+            elements.cursorFollower.style.height = '12px';
+            document.body.classList.add('mid-pick-active');
+        } else {
+            document.body.classList.remove('mid-pick-active');
+        }
     }
 }
+
 
 function updateCursorFollowerColor() {
     if (!elements.cursorFollower) return;
@@ -889,6 +1246,15 @@ function updateCursorFollowerColor() {
 function renderPalette() {
     elements.paletteList.innerHTML = '';
 
+    // Find all colors in selection
+    const colorsInSelection = new Set();
+    if (currentTool === 'select') {
+        selectedBlocks.forEach(p => {
+            const b = state.blocks.get(`${p.x},${p.y}`);
+            if (b) colorsInSelection.add(b.col);
+        });
+    }
+
     // Calculate required ammo / HP differential per color
     let hpStats = {};
     let ammoStats = {};
@@ -897,7 +1263,9 @@ function renderPalette() {
     state.blocks.forEach(b => { if (hpStats[b.col] !== undefined) hpStats[b.col] += b.hp; });
     state.warehouseColumns.forEach(col => {
         col.forEach(u => {
-            if (ammoStats[u.col] !== undefined) ammoStats[u.col] += u.ammo;
+            if (!u.IsBarnLock) {
+                if (ammoStats[u.col] !== undefined) ammoStats[u.col] += u.ammo;
+            }
         });
     });
 
@@ -906,10 +1274,13 @@ function renderPalette() {
         let diffStr = diff > 0 ? `+${diff}` : String(diff);
         let diffClass = diff > 0 ? 'diff-positive' : (diff < 0 ? 'diff-negative' : 'diff-zero');
 
+        const isHighlighted = colorsInSelection.has(color.id);
+
         const el = document.createElement('div');
-        el.className = `palette-item ${color.id === selectedColorId ? 'selected' : ''}`;
+        el.className = `palette-item ${color.id === selectedColorId ? 'selected' : ''} ${isHighlighted ? 'highlighted' : ''}`;
         el.title = `Color ID: ${color.id}`;
         el.innerHTML = `
+            <div class="palette-diff-badge ${diffClass}">${diffStr}</div>
             <div class="palette-color-preview" style="background-color: ${color.hex}"></div>
             <div class="palette-info">
                 <span>HP Diff: <b class="${diffClass}">${diffStr}</b></span>
@@ -923,8 +1294,17 @@ function renderPalette() {
             } else {
                 selectedColorId = color.id;
                 elements.newColorInput.value = color.hex;
-                renderPalette();
-                updateCursorFollowerColor();
+
+                if (currentTool === 'select' && selectedBlocks.length > 0) {
+                    selectedBlocks.forEach(p => {
+                        const b = state.blocks.get(`${p.x},${p.y}`);
+                        if (b) b.col = color.id;
+                    });
+                    renderCanvas();
+                    updatePaletteStats();
+                } else {
+                    selectColorById(color.id);
+                }
             }
         });
 
@@ -933,8 +1313,9 @@ function renderPalette() {
             elements.newColorInput.value = color.hex;
             
             const rect = el.getBoundingClientRect();
-            elements.newColorInput.style.left = `${rect.right + 10}px`;
-            elements.newColorInput.style.top = `${rect.top}px`;
+            elements.newColorInput.style.position = 'fixed';
+            elements.newColorInput.style.left = `${rect.left}px`;
+            elements.newColorInput.style.top = `${rect.bottom}px`;
             
             elements.newColorInput.click();
             renderPalette();
@@ -955,6 +1336,7 @@ function renderPalette() {
     keyEl.className = `palette-item ${selectedColorId === 'key' ? 'selected' : ''}`;
     keyEl.title = "Keys Tool";
     keyEl.innerHTML = `
+        <div class="palette-diff-badge ${locksDiffClass}">${locksDiffStr}</div>
         <div class="palette-color-preview" style="background-color: rgba(251, 191, 36, 0.5); border-radius: 4px; display: flex; align-items: center; justify-content: center; position: relative;">
           <span style="font-size: 14px;">🗝️</span>
         </div>
@@ -1040,6 +1422,90 @@ function createUnits() {
     allNewUnits.forEach(u => {
         state.warehouseColumns[colIdx].push(u);
         colIdx = (colIdx + 1) % state.unitColsCount;
+    });
+
+
+
+    renderWarehouse();
+    updatePaletteStats();
+}
+
+function addMissingUnits() {
+    state.colors.forEach(c => {
+        let hpSum = 0;
+        state.blocks.forEach(b => { if (b.col === c.id) hpSum += b.hp; });
+        
+        let unitsOfColor = [];
+        state.warehouseColumns.forEach(col => {
+            col.forEach(u => {
+                if (u.col === c.id && !u.IsBarnLock) {
+                    unitsOfColor.push(u);
+                }
+            });
+        });
+        
+        let ammoSum = unitsOfColor.reduce((sum, u) => sum + u.ammo, 0);
+        
+        if (hpSum > ammoSum) {
+            let missing = hpSum - ammoSum;
+            // 1. Fill existing up to max
+            for (let u of unitsOfColor) {
+                if (missing <= 0) break;
+                if (u.ammo < state.unitMaxAmmo) {
+                    let room = state.unitMaxAmmo - u.ammo;
+                    let add = Math.min(room, missing);
+                    u.ammo += add;
+                    missing -= add;
+                }
+            }
+            // 2. Add new
+            while (missing > 0) {
+                let add = Math.min(state.unitMaxAmmo, missing);
+                let maxId = 0;
+                state.warehouseColumns.forEach(col => { col.forEach(u => { const m = u.id.match(/^u_(\d+)$/); if (m && parseInt(m[1]) > maxId) maxId = parseInt(m[1]); }); });
+                let newUnit = { id: `u_${maxId + 1}`, col: c.id, ammo: add, Lnk: [], IsHidden: false, IsBarnLock: false };
+                
+                let shortestColIdx = 0;
+                for (let i = 1; i < state.unitColsCount; i++) {
+                    if (state.warehouseColumns[i].length < state.warehouseColumns[shortestColIdx].length) {
+                        shortestColIdx = i;
+                    }
+                }
+                if (state.warehouseColumns.length === 0) {
+                    state.warehouseColumns = Array.from({ length: state.unitColsCount }, () => []);
+                }
+                state.warehouseColumns[shortestColIdx].push(newUnit);
+                
+                missing -= add;
+                unitsOfColor.push(newUnit);
+            }
+        } else if (hpSum < ammoSum) {
+            let surplus = ammoSum - hpSum;
+            unitsOfColor.sort((a, b) => a.ammo - b.ammo);
+            
+            for (let i = 0; i < unitsOfColor.length && surplus > 0; i++) {
+                let u = unitsOfColor[i];
+                if (u.ammo <= surplus) {
+                    surplus -= u.ammo;
+                    u.ammo = 0; // mark for deletion
+                } else {
+                    u.ammo -= surplus;
+                    surplus = 0;
+                }
+            }
+            
+            state.warehouseColumns.forEach((colData) => {
+                for (let i = colData.length - 1; i >= 0; i--) {
+                    if (colData[i].col === c.id && !colData[i].IsBarnLock && colData[i].ammo === 0) {
+                        let idToDelete = colData[i].id;
+                        state.warehouseColumns.forEach(cd => cd.forEach(uu => {
+                            if (uu.Lnk) uu.Lnk = uu.Lnk.filter(lnkId => lnkId !== idToDelete);
+                        }));
+                        colData.splice(i, 1);
+                    }
+                }
+            });
+        }
     });
 
     renderWarehouse();
@@ -1188,8 +1654,17 @@ function onUnitPointerDown(e, colIndex, unitIndex, unitData, unitEl) {
         document.addEventListener('pointerup', onLinkPointerUp);
         return;
     }
+
+    // Clear canvas selection when interacting with units
+    if (selectedBlocks.length > 0 || selectedKeys.length > 0) {
+        selectedBlocks = [];
+        selectedKeys = [];
+        renderCanvas();
+        showControlPanels();
+    }
     
     isDraggingUnit = true;
+
     draggedUnitInfo = {
         colIndex,
         unitIndex,
@@ -1298,6 +1773,7 @@ function onUnitPointerUp(e) {
         elements.unitIsHidden.checked = draggedUnitInfo.data.IsHidden || false;
         elements.unitIsBarnLock.checked = draggedUnitInfo.data.IsBarnLock || false;
         updateUnitLinksPanel();
+        updateUnitColorSelector();
     } else {
         selectedUnitInfo = {
             colIndex: draggedUnitInfo.colIndex,
@@ -1310,10 +1786,41 @@ function onUnitPointerUp(e) {
         elements.unitIsBarnLock.checked = draggedUnitInfo.data.IsBarnLock || false;
         updatePaletteStats(); // Also update counts across columns in case we need
         updateUnitLinksPanel();
+        updateUnitColorSelector();
     }
     
     draggedUnitInfo = null;
     renderWarehouse();
+}
+
+function updateUnitColorSelector() {
+    elements.unitColorSelector.innerHTML = '';
+    if (!selectedUnitInfo) return;
+    const { colIndex, unitIndex } = selectedUnitInfo;
+    const unit = state.warehouseColumns[colIndex][unitIndex];
+    if (!unit) return;
+    
+    state.colors.forEach(c => {
+        let el = document.createElement('div');
+        el.style.width = '24px';
+        el.style.height = '24px';
+        el.style.borderRadius = '50%';
+        el.style.backgroundColor = c.hex;
+        el.style.cursor = 'pointer';
+        el.style.border = unit.col === c.id ? '2px solid white' : '2px solid transparent';
+        if (unit.col === c.id) el.style.boxShadow = '0 0 4px rgba(0,0,0,0.5)';
+        
+        el.title = `Switch to Color ID: ${c.id}`;
+        
+        el.addEventListener('click', () => {
+            unit.col = c.id;
+            updateUnitColorSelector();
+            renderWarehouse();
+            updatePaletteStats();
+        });
+        
+        elements.unitColorSelector.appendChild(el);
+    });
 }
 
 // --- LINK MODE DRAWING ---
@@ -1632,7 +2139,7 @@ async function saveCurrentProject() {
         return;
     }
 
-    const snap = elements.canvas.toDataURL("image/webp", 0.5);
+    const snap = elements.canvas.toDataURL("image/webp", 0.3); // Lower quality to save space
     const projData = {
         userId: firebaseUser.uid,
         name: `Level ${new Date().toLocaleString()}`,
@@ -1641,16 +2148,20 @@ async function saveCurrentProject() {
         json: buildJSONString()
     };
 
-    const docRef = doc(collection(db, `users/${firebaseUser.uid}/projects`));
     try {
-        await setDoc(docRef, projData);
+        const levelsCol = collection(db, `users/${firebaseUser.uid}/levels`);
+        await setDoc(doc(levelsCol), projData);
         loadSaves(); // refresh cards
     } catch (err) {
-        // Fallback or log if rules prevent it
-        console.error("Save error: check Firestore rules", err);
-        alert("Failed to save. Check your Firestore rules!");
+        console.error("Save error:", err);
+        if (err.code === 'permission-denied') {
+            alert("Failed to save: Permission Denied. You may need to update your Firestore Rules to allow writing to users/{userId}/levels/{docId}.");
+        } else {
+            alert("Failed to save. Check your connection or Firestore limits!");
+        }
     }
 }
+
 
 async function loadSaves() {
     if (!firebaseUser) return;
@@ -1659,7 +2170,7 @@ async function loadSaves() {
         const cards = elements.savesCarousel.querySelectorAll('.save-card:not(.create-new)');
         cards.forEach(c => c.remove());
 
-        const q = query(collection(db, `users/${firebaseUser.uid}/projects`), orderBy("timestamp", "desc"));
+        const q = query(collection(db, `users/${firebaseUser.uid}/levels`), orderBy("timestamp", "desc"));
         const querySnapshot = await getDocs(q);
         querySnapshot.forEach((docSnap) => {
             const data = docSnap.data();
@@ -1801,7 +2312,7 @@ window.overwriteSave = async function (id) {
             json: buildJSONString()
         };
         try {
-            await setDoc(doc(db, `users/${firebaseUser.uid}/projects`, id), projData, { merge: true });
+            await setDoc(doc(db, `users/${firebaseUser.uid}/levels`, id), projData, { merge: true });
             loadSaves();
         } catch (e) {
             console.error(e);
@@ -1814,7 +2325,7 @@ window.delSave = async function (id) {
     if (!firebaseUser) return;
     if (confirm("Delete this save?")) {
         try {
-            await deleteDoc(doc(db, `users/${firebaseUser.uid}/projects`, id));
+            await deleteDoc(doc(db, `users/${firebaseUser.uid}/levels`, id));
             loadSaves();
         } catch (e) { console.error(e); }
     }
@@ -1822,4 +2333,81 @@ window.delSave = async function (id) {
 
 // Start
 init();
+
+function mirrorSelection(axis) {
+    if (selectedBlocks.length === 0 && selectedKeys.length === 0) return;
+
+    // Find bounds
+    let minX = Infinity, maxX = -Infinity;
+    let minY = Infinity, maxY = -Infinity;
+
+    const allSelections = [...selectedBlocks, ...selectedKeys];
+    allSelections.forEach(p => {
+        minX = Math.min(minX, p.x);
+        maxX = Math.max(maxX, p.x);
+        minY = Math.min(minY, p.y);
+        maxY = Math.max(maxY, p.y);
+    });
+
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+
+    const newBlocksMap = new Map();
+    const newKeysMap = new Map();
+
+    // Mirror Blocks
+    selectedBlocks.forEach(pos => {
+        const key = `${pos.x},${pos.y}`;
+        const b = state.blocks.get(key);
+        if (b) {
+            state.blocks.delete(key);
+            let nx = pos.x;
+            let ny = pos.y;
+            if (axis === 'horizontal') {
+                nx = Math.round(centerX + (centerX - pos.x));
+            } else {
+                ny = Math.round(centerY + (centerY - pos.y));
+            }
+            if (nx >= 0 && nx < state.gridSize && ny >= 0 && ny < state.gridSize) {
+                newBlocksMap.set(`${nx},${ny}`, b);
+            }
+        }
+    });
+
+    // Mirror Keys
+    selectedKeys.forEach(pos => {
+        const key = `${pos.x},${pos.y}`;
+        const k = state.keys.get(key);
+        if (k) {
+            state.keys.delete(key);
+            let nx = pos.x;
+            let ny = pos.y;
+            if (axis === 'horizontal') {
+                nx = Math.round(centerX + (centerX - pos.x));
+            } else {
+                ny = Math.round(centerY + (centerY - pos.y));
+            }
+            if (nx >= 0 && nx < state.gridSize && ny >= 0 && ny < state.gridSize) {
+                newKeysMap.set(`${nx},${ny}`, k);
+            }
+        }
+    });
+
+    // Merge back
+    newBlocksMap.forEach((v, k) => state.blocks.set(k, v));
+    newKeysMap.forEach((v, k) => state.keys.set(k, v));
+
+    // Update selection
+    selectedBlocks = Array.from(newBlocksMap.keys()).map(k => {
+        const [x, y] = k.split(',').map(Number);
+        return { x, y };
+    });
+    selectedKeys = Array.from(newKeysMap.keys()).map(k => {
+        const [x, y] = k.split(',').map(Number);
+        return { x, y };
+    });
+
+    renderCanvas();
+    updatePaletteStats();
+}
 

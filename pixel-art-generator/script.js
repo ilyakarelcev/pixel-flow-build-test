@@ -413,14 +413,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             if (currentUser) {
-                const docRef = doc(db, `users/${currentUser.uid}/projects`, projectId);
+                const docRef = doc(db, `users/${currentUser.uid}/sprites`, projectId);
                 await setDoc(docRef, projectData);
             } else {
                 let projects = getProjectsLocal();
                 const index = projects.findIndex(p => p.id === projectId);
                 if (index !== -1) projects[index] = projectData;
                 else projects.unshift(projectData);
-                localStorage.setItem('pixelFlowProjects', JSON.stringify(projects));
+                localStorage.setItem('slimeFlowSprites', JSON.stringify(projects));
             }
 
             renderProjects();
@@ -461,7 +461,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function getProjectsLocal() {
-        const saved = localStorage.getItem('pixelFlowProjects');
+        const saved = localStorage.getItem('slimeFlowSprites');
         return saved ? JSON.parse(saved) : [];
     }
 
@@ -472,7 +472,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (currentUser) {
             try {
-                const q = query(collection(db, `users/${currentUser.uid}/projects`), orderBy('timestamp', 'desc'));
+                const q = query(collection(db, `users/${currentUser.uid}/sprites`), orderBy('timestamp', 'desc'));
                 const snap = await getDocs(q);
                 projects = snap.docs.map(doc => doc.data());
             } catch (err) {
@@ -539,7 +539,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (confirm("Удалить этот проект?")) {
                     if (currentUser) {
                         try {
-                            await deleteDoc(doc(db, `users/${currentUser.uid}/projects`, project.id));
+                            await deleteDoc(doc(db, `users/${currentUser.uid}/sprites`, project.id));
                             renderProjects();
                         } catch (err) {
                             console.error(err);
