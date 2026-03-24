@@ -167,45 +167,7 @@
       border: 1px solid rgba(255, 255, 255, 0.2);
     }
 
-    #unity-progress-bar-full {
-      width: 0%;
-      height: 100%;
-      background: linear-gradient(90deg, #4CAF50, #8BC34A);
-      transition: width 0.2s;
-    }
 
-    #unity-footer {
-      position: absolute;
-      bottom: 10px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      gap: 20px;
-      align-items: center;
-      background: rgba(0,0,0,0.5);
-      padding: 5px 15px;
-      border-radius: 20px;
-      backdrop-filter: blur(5px);
-      font-size: 12px;
-      color: var(--text-dim);
-      opacity: 0.5;
-      transition: opacity 0.3s;
-    }
-
-    #unity-footer:hover {
-      opacity: 1;
-    }
-
-    #unity-fullscreen-button {
-      width: 25px;
-      height: 25px;
-      background: url('TemplateData/fullscreen-button.png') no-repeat center;
-      background-size: contain;
-      cursor: pointer;
-      filter: invert(1);
-    }
-
-    /* Scrollbar styling */
     #json-input::-webkit-scrollbar {
       width: 8px;
     }
@@ -252,10 +214,6 @@
       </div>
     </div>
     <div id="unity-warning"> </div>
-    <div id="unity-footer">
-      <div id="unity-fullscreen-button" title="Fullscreen"></div>
-      <div id="unity-build-title">Slime Flow</div>
-    </div>
   </div>
 
   <script>
@@ -319,9 +277,6 @@
         myUnityInstance = unityInstance; // Сохраняем ссылку!
 
         document.querySelector("#unity-loading-bar").style.display = "none";
-        document.querySelector("#unity-fullscreen-button").onclick = () => {
-          unityInstance.SetFullscreen(1);
-        };
 
         // Загружаем дефолтный уровень из файла level.json
         fetch("level.json")
