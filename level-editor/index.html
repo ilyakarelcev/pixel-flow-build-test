@@ -126,10 +126,6 @@
                         </div>
 
                         <div id="hp-control-panel" class="hidden glass-panel hp-bottom-bar">
-                            <div id="block-hp-container">
-                                <label>Selected Item HP: <span id="block-hp-val">1</span></label>
-                                <input type="range" id="block-hp-slider" min="1" max="100" value="1">
-                            </div>
                             <div id="selection-actions" class="button-row">
                                 <button id="btn-copy-selection" class="btn secondary" title="Copy selection">
                                     <i class="material-icons">content_copy</i>
@@ -144,14 +140,33 @@
                                     <span>MIRROR V</span>
                                 </button>
                             </div>
-                            <div id="key-size-container" class="hidden">
-                                <div class="key-control-row">
-                                    <label>Key Width: <span id="key-w-val">1</span></label>
-                                    <input type="range" id="key-w-slider" min="1" max="10" value="1">
+
+                            <div id="properties-panel" style="display: flex; flex-direction: column; gap: 8px; flex: 1;">
+                                <div id="block-hp-container">
+                                    <div class="block-control-row">
+                                        <label>Selected Item HP: <span id="block-hp-val">1</span></label>
+                                        <input type="range" id="block-hp-slider" min="1" max="100" value="1">
+                                    </div>
                                 </div>
-                                <div class="key-control-row">
-                                    <label>Key Height: <span id="key-h-val">1</span></label>
-                                    <input type="range" id="key-h-slider" min="1" max="10" value="1">
+                                <div id="block-size-container" style="display: flex; flex-direction: column; gap: 8px;">
+                                    <div class="block-control-row">
+                                        <label>Block Width: <span id="block-w-val">1</span></label>
+                                        <input type="range" id="block-w-slider" min="1" max="10" value="1">
+                                    </div>
+                                    <div class="block-control-row">
+                                        <label>Block Height: <span id="block-h-val">1</span></label>
+                                        <input type="range" id="block-h-slider" min="1" max="10" value="1">
+                                    </div>
+                                </div>
+                                <div id="key-size-container" class="hidden" style="flex-direction: column; gap: 8px;">
+                                    <div class="key-control-row">
+                                        <label>Key Width: <span id="key-w-val">1</span></label>
+                                        <input type="range" id="key-w-slider" min="1" max="10" value="1">
+                                    </div>
+                                    <div class="key-control-row">
+                                        <label>Key Height: <span id="key-h-val">1</span></label>
+                                        <input type="range" id="key-h-slider" min="1" max="10" value="1">
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -228,6 +243,9 @@
                         <button id="btn-add-missing" class="btn secondary flex-grow">Equalize</button>
                         <button id="btn-add-unit" class="btn secondary icon-only" title="Add Single Unit">
                             <span class="material-icons-rounded">add</span>
+                        </button>
+                        <button id="btn-add-barn-lock" class="btn secondary icon-only" title="Add Barn Lock">
+                            <span class="material-icons-rounded">lock</span>
                         </button>
                         <button id="btn-shuffle-units" class="btn secondary icon-only" title="Shuffle Units">
                             <span class="material-icons-rounded">shuffle</span>

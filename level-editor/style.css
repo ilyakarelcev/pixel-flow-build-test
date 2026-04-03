@@ -705,7 +705,7 @@ body.alt-pressed canvas {
   display: flex;
   gap: 20px;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   width: 100%;
 }
 
@@ -723,11 +723,7 @@ body.alt-pressed canvas {
   font-size: 18px;
 }
 
-.hp-bottom-bar #block-hp-container, 
-.hp-bottom-bar #key-size-container {
-  display: flex;
-  align-items: center;
-  gap: 16px;
+.hp-bottom-bar #properties-panel {
   flex: 1;
   max-width: 600px;
 }
@@ -744,15 +740,12 @@ body.alt-pressed canvas {
   min-width: 140px;
 }
 
-.key-control-row {
+.key-control-row,
+.block-control-row {
   display: flex;
   align-items: center;
   gap: 12px;
   flex: 1;
-}
-
-.key-control-row label {
-  min-width: 90px;
 }
 
 /* WAREHOUSE UNITS */
