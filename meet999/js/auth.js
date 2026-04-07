@@ -1,6 +1,6 @@
 import { 
     auth, db, ref, get, set, update, 
-    signInWithPopup, googleProvider, 
+    signInWithPopup, signInWithRedirect, getRedirectResult, googleProvider, 
     createUserWithEmailAndPassword, signInWithEmailAndPassword, 
     signOut, onAuthStateChanged,
     storage, storageRef, uploadBytes, getDownloadURL
@@ -97,13 +97,23 @@ onAuthStateChanged(auth, async (user) => {
 // Exposed Functions for UI
 export async function handleGoogleLogin() {
     try {
-        await signInWithPopup(auth, googleProvider);
-        closeModal('auth-modal');
-        showToast('Успешный вход!');
+        // Redirection is more reliable for GitHub Pages and COOP issues
+        await signInWithRedirect(auth, googleProvider);
     } catch (error) {
         showToast('Ошибка входа: ' + error.message);
     }
 }
+
+// Handle redirect result
+getRedirectResult(auth).then((result) => {
+    if (result?.user) {
+        showToast('Успешный вход!');
+    }
+}).catch((error) => {
+    if (error.code !== 'auth/unauthorized-domain') {
+        showToast('Ошибка авторизации: ' + error.message);
+    }
+});
 
 export async function handleEmailRegister(email, password) {
     try {
