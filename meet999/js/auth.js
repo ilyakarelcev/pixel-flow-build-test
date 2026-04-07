@@ -149,52 +149,63 @@ export async function handleLogout() {
 
 // Profile update
 export async function saveProfileInfo(newNickname, newColor, file) {
-    if (!currentUser) return;
+    if (!currentUser) return false;
     
-    let updates = {};
-    
-    // Check nickname uniqueness if changed
-    if (newNickname !== currentUserProfile.nickname) {
-        // Simple check (in production should use rules or functions)
-        const usersRef = ref(db, 'users');
-        const snap = await get(usersRef);
-        let exists = false;
-        if (snap.exists()) {
-            snap.forEach(child => {
-                if (child.val().nickname === newNickname) exists = true;
-            });
+    try {
+        let updates = {};
+        
+        // Check nickname uniqueness if changed
+        if (newNickname !== currentUserProfile.nickname) {
+            const usersRef = ref(db, 'users');
+            const snap = await get(usersRef);
+            let exists = false;
+            if (snap.exists()) {
+                const users = snap.val();
+                for (let id in users) {
+                    if (users[id].nickname === newNickname) exists = true;
+                }
+            }
+            if (exists) {
+                showToast('Этот никнейм уже занят');
+                return false;
+            }
+            updates.nickname = newNickname;
         }
-        if (exists) {
-            showToast('Этот никнейм уже занят');
-            return false;
+        
+        if (newColor && newColor !== currentUserProfile.userColor) {
+            updates.userColor = newColor;
         }
-        updates.nickname = newNickname;
-    }
-    
-    if (newColor !== currentUserProfile.userColor) {
-        updates.userColor = newColor;
-    }
-    
-    if (file) {
-        if(file.size > 2 * 1024 * 1024) {
-            showToast('Файл слишком большой (до 2МБ)');
-            return false;
+        
+        if (file) {
+            if(file.size > 2 * 1024 * 1024) {
+                showToast('Файл слишком большой (до 2МБ)');
+                return false;
+            }
+            const fileRef = storageRef(storage, `avatars/${currentUser.uid}`);
+            console.log('Uploading file...');
+            await uploadBytes(fileRef, file);
+            const url = await getDownloadURL(fileRef);
+            updates.avatar = url;
+            console.log('File uploaded:', url);
         }
-        const fileRef = storageRef(storage, `avatars/${currentUser.uid}`);
-        await uploadBytes(fileRef, file);
-        const url = await getDownloadURL(fileRef);
-        updates.avatar = url;
+        
+        if (Object.keys(updates).length > 0) {
+            await update(ref(db, `users/${currentUser.uid}`), updates);
+            Object.assign(currentUserProfile, updates);
+            updateHeaderUI();
+            showToast('Профиль обновлен');
+            document.dispatchEvent(new CustomEvent('profileUpdated'));
+        }
+        return true;
+    } catch (e) {
+        console.error('Save error:', e);
+        if (e.message.includes('CORS')) {
+            showToast('Ошибка CORS: Настройте Firebase Storage (см. инструкцию)');
+        } else {
+            showToast('Ошибка сохранения: ' + e.message);
+        }
+        return false;
     }
-    
-    if (Object.keys(updates).length > 0) {
-        await update(ref(db, `users/${currentUser.uid}`), updates);
-        Object.assign(currentUserProfile, updates);
-        updateHeaderUI();
-        showToast('Профиль обновлен');
-        document.dispatchEvent(new CustomEvent('profileUpdated'));
-    }
-    
-    return true;
 }
 
 export function populateProfileModal() {
