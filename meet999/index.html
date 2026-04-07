@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meet 999 - Еженедельные онлайн встречи</title>
+    <meta name="description" content="AI в разработке игр. Еженедельные онлайн встречи для разработчиков.">
+    <link rel="stylesheet" href="css/style.css">
+    
+    <!-- Yandex.Metrika counter MVP -->
+    <script type="text/javascript" >
+       (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+       m[i].l=1*new Date();
+       for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+       k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+       (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+       ym(99999999, "init", { clickmap:true, trackLinks:true, accurateTrackBounce:true });
+    </script>
+</head>
+<body>
+    
+    <div id="speaker-banner" class="speaker-banner hidden">
+        <span>Вы являетесь спикером!</span>
+        <a href="https://telemost.yandex.ru" target="_blank" class="speaker-telemost-link">Ссылка на Яндекс Телемост</a>
+    </div>
+
+    <header class="header">
+        <div class="logo">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="2" y="3" width="20" height="14" rx="2" stroke="url(#paint0_linear)" stroke-width="2"/>
+                <path d="M8 21H16" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                <path d="M12 17V21" stroke="white" stroke-width="2"/>
+                <defs>
+                    <linearGradient id="paint0_linear" x1="2" y1="10" x2="22" y2="10" gradientUnits="userSpaceOnUse">
+                        <stop stop-color="#557bff"/>
+                        <stop offset="1" stop-color="#8b5cf6"/>
+                    </linearGradient>
+                </defs>
+            </svg>
+            Meet 999
+        </div>
+        <div class="user-controls">
+            <div id="header-logged-out">
+                <button class="btn btn-outline" id="btn-login">Войти</button>
+                <button class="btn btn-primary" id="btn-register">Регистрация</button>
+            </div>
+            <div id="header-logged-in" class="hidden">
+                <button class="user-profile-btn" id="btn-profile">
+                    <div class="avatar" id="header-avatar"></div>
+                    <span class="nickname" id="header-nickname"></span>
+                </button>
+                <button class="btn btn-outline" style="padding: 6px 12px; font-size: 13px;" id="btn-logout">Выйти</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        
+        <section class="hero">
+            <h1>Meet 999</h1>
+            <p>Следующий Meet 16 апреля 19:00 МСК!</p>
+            
+            <div class="timer">
+                <div class="timer-box">
+                    <div class="timer-val" id="timer-days">05</div>
+                    <div class="timer-label">Дней</div>
+                </div>
+                <div class="timer-box">
+                    <div class="timer-val" id="timer-hours">04</div>
+                    <div class="timer-label">Часа</div>
+                </div>
+                <div class="timer-box">
+                    <div class="timer-val" id="timer-mins">33</div>
+                    <div class="timer-label">Минуты</div>
+                </div>
+                <div class="timer-box">
+                    <div class="timer-val" id="timer-secs">22</div>
+                    <div class="timer-label">Секунды</div>
+                </div>
+            </div>
+            
+            <a href="stream.html" class="btn btn-primary" style="font-size: 18px; padding: 12px 30px;">Перейти к трансляции</a>
+        </section>
+
+        <!-- Schedule -->
+        <div style="display: flex; gap: 40px; flex-wrap: wrap;">
+            
+            <div style="flex: 1; min-width: 300px;">
+                <div class="glass-panel" style="padding: 20px;">
+                    <h3 style="margin-bottom: 20px; font-size: 20px;">Расписание</h3>
+                    
+                    <div class="schedule-table-wrap">
+                        <table class="schedule-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Спикер</th>
+                                    <th>Время</th>
+                                    <th>Тема</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Выступление 1</td>
+                                    <td>👨🏼‍🦰 <a href="#" class="speaker-link">Илья Карельцев</a></td>
+                                    <td>19:00 - 19:10</td>
+                                    <td>Введение, знакомство с мероприятием</td>
+                                </tr>
+                                <tr>
+                                    <td>Выступление 2</td>
+                                    <td>👨🏿‍🦰 <a href="#" class="speaker-link">Иван Иванов</a></td>
+                                    <td>19:10 - 19:20</td>
+                                    <td>Мой опыт использования Claude в разработке. Как я сделал игру за 10 секунд.</td>
+                                </tr>
+                                <tr>
+                                    <td>Выступление 3</td>
+                                    <td style="color: var(--text-secondary)">- свободно -</td>
+                                    <td>19:20 - 19:30</td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td>Выступление 4</td>
+                                    <td style="color: var(--text-secondary)">- свободно -</td>
+                                    <td>19:30 - 19:40</td>
+                                    <td></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div style="text-align: center; margin-top: 20px;">
+                        <button class="btn btn-primary" id="btn-apply-speaker">Хочу выступить! (Подать заявку)</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Page Chat Area -->
+            <div style="flex: 1; min-width: 350px; max-width: 500px;">
+                <div class="glass-panel chat-window" style="height: 600px; border-left: none;">
+                    <div style="padding: 16px; border-bottom: 1px solid var(--panel-border); font-weight: 600; text-align: center;">ОБЩИЙ ЧАТ</div>
+                    
+                    <div class="chat-messages" id="chat-messages">
+                        <div style="text-align:center; padding: 20px; color: var(--text-secondary)">Загрузка сообщений...</div>
+                    </div>
+                    
+                    <div class="chat-input-area">
+                        <div class="chat-input-state" id="chat-input-state">
+                            <span id="chat-state-val">Ответ: ...</span>
+                            <button class="modal-close" id="cancel-chat-state" style="position: static; width:20px; height:20px; font-size:16px;">&times;</button>
+                        </div>
+                        <div class="chat-input-row">
+                            <textarea id="chat-input" class="chat-textarea" placeholder="Написать сообщение..."></textarea>
+                            <button id="chat-send-btn" class="chat-send-btn">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Modals -->
+    <!-- Auth Modal -->
+    <div class="modal-overlay" id="auth-modal">
+        <div class="modal-content">
+            <button class="modal-close">&times;</button>
+            <h2 class="modal-title">Meet 999</h2>
+            
+            <div class="auth-tabs">
+                <button class="auth-tab active" data-mode="login">Вход</button>
+                <button class="auth-tab" data-mode="register">Регистрация</button>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" id="auth-email" class="form-control" placeholder="ваша@почта.ру">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Пароль</label>
+                <input type="password" id="auth-pass" class="form-control" placeholder="••••••••">
+            </div>
+            <button class="btn btn-primary" style="width:100%; margin-bottom: 20px;" id="btn-email-action">Войти</button>
+            
+            <div style="text-align: center; margin: 16px 0; color: var(--text-secondary); font-size: 14px;">ИЛИ</div>
+            
+            <button class="btn btn-outline" style="width:100%; display:flex; gap:10px; justify-content:center" id="btn-google-auth">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                </svg>
+                Продолжить с Google
+            </button>
+        </div>
+    </div>
+
+    <!-- Profile Modal -->
+    <div class="modal-overlay" id="profile-modal">
+        <div class="modal-content">
+            <button class="modal-close">&times;</button>
+            <h2 class="modal-title">Настройки профиля</h2>
+            
+            <div class="form-group">
+                <label class="form-label">Никнейм (уникальный)</label>
+                <input type="text" id="profile-nickname" class="form-control">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Аватарка (Файл .jpg, .png)</label>
+                <input type="file" id="profile-avatar-file" class="form-control" accept="image/*">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Цвет профиля</label>
+                <div class="color-palette" id="profile-colors"></div>
+            </div>
+
+            <div style="margin-top: 30px;">
+                <button class="btn btn-primary" id="btn-save-profile" style="width:100%">Сохранить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Apply Modal -->
+    <div class="modal-overlay" id="apply-modal">
+        <div class="modal-content" style="max-width:600px;">
+            <button class="modal-close">&times;</button>
+            <h2 class="modal-title">Заявка на выступление</h2>
+            <p style="margin-bottom: 24px; color: var(--text-secondary); line-height: 1.5;">
+                Привет! Если у тебя есть интересный опыт в любой теме, которая связана с использованием нейросетей, применительно к разработке игр, мы будем очень признательны, если ты поделишься этим с нашим сообществом.
+            </p>
+            
+            <div class="form-group">
+                <label class="form-label">Ваш telegram *</label>
+                <input type="text" id="apply-tg" class="form-control" placeholder="@username">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Название выступления *</label>
+                <input type="text" id="apply-title" class="form-control" placeholder="Моя крутая тема">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Про что хотите рассказать? *</label>
+                <textarea id="apply-desc" class="form-control" placeholder="Краткое описание..."></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Комментарий для модератора</label>
+                <input type="text" id="apply-comment" class="form-control">
+            </div>
+
+            <div style="margin-top: 30px;">
+                <button class="btn btn-primary" id="btn-submit-apply" style="width:100%">Отправить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Context Menu for Chat -->
+    <div class="context-menu" id="chat-context-menu">
+        <div class="context-menu-item" id="ctx-reply">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 17 4 12 9 7"></polyline><path d="M20 18v-2a4 4 0 0 0-4-4H4"></path></svg>
+            Reply
+        </div>
+        <div class="context-menu-item" id="ctx-edit">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+            Edit
+        </div>
+        <div class="context-menu-item danger" id="ctx-delete">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            Delete
+        </div>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+    <script type="module">
+        // Small injection to check speaker flag and adapt main menu if needed
+        document.addEventListener('authStateChanged', (e) => {
+            const isSpeaker = e.detail.profile?.isSpeaker;
+            const banner = document.getElementById('speaker-banner');
+            if (isSpeaker && banner) {
+                banner.classList.remove('hidden');
+            } else if (banner) {
+                banner.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
