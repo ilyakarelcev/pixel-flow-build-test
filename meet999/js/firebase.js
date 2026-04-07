@@ -6,6 +6,7 @@ import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "http
 const firebaseConfig = {
   apiKey: "AIzaSyDRVpa7iITcykOBv585aPLG0_jK6dv18sU",
   authDomain: "meet999.firebaseapp.com",
+  databaseURL: "https://meet999-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "meet999",
   storageBucket: "meet999.firebasestorage.app",
   messagingSenderId: "599144355",

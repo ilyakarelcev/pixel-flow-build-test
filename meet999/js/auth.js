@@ -81,9 +81,16 @@ function checkSpeakerStatus() {
 
 // Auth State Observer
 onAuthStateChanged(auth, async (user) => {
+    console.log('Auth state changed:', user ? 'Logged in' : 'Logged out');
     if (user) {
         currentUser = user;
-        await fetchUserProfile(user.uid, user.email);
+        try {
+            await fetchUserProfile(user.uid, user.email);
+            console.log('Profile fetched:', currentUserProfile);
+        } catch (e) {
+            console.error('Error fetching profile:', e);
+            showToast('Ошибка загрузки профиля: ' + e.message);
+        }
         document.dispatchEvent(new CustomEvent('authStateChanged', { detail: { user: currentUser, profile: currentUserProfile }}));
     } else {
         currentUser = null;
