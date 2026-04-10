@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Мердж шариков</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="app">
+        <header>
+            <div class="score-box">
+                <div class="score-label">СЧЕТ</div>
+                <div id="score">0</div>
+            </div>
+            <div class="score-box">
+                <div class="score-label">РЕКОРД</div>
+                <div id="high-score">0</div>
+            </div>
+        </header>
+
+        <main>
+            <div id="grid-container">
+                <div id="cells-layer"></div>
+                <div id="balls-layer"></div>
+            </div>
+
+            <div id="inventory">
+                <!-- Сюда вставляются 5 слотов с шариками -->
+            </div>
+        </main>
+    </div>
+
+    <!-- Всплывающее окно "Поражение" -->
+    <div id="game-over-modal" class="hidden">
+        <div class="modal-content">
+            <h2>Игра Окончена</h2>
+            <p>Ваш счет: <br><span id="final-score">0</span></p>
+            <button id="restart-btn">Начать заново</button>
+        </div>
+    </div>
+
+    <!-- Эффекты очков -->
+    <div id="fx-layer"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>
