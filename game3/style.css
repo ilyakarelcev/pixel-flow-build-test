@@ -138,6 +138,15 @@ main {
     transition: all 0.2s ease;
 }
 
+.cell.bump {
+    animation: cellBump 0.2s ease-out;
+}
+@keyframes cellBump {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.15); background-color: rgba(255,255,255,0.4) !important; z-index: 10; }
+    100% { transform: scale(1); }
+}
+
 .cell.highlight {
     border-color: #fff;
     filter: brightness(1.2);
@@ -226,6 +235,19 @@ main {
     align-items: center;
 }
 
+@keyframes slotFlash {
+    0%, 100% { border-color: rgba(0,0,0,0.3); box-shadow: inset 0 4px 8px rgba(0,0,0,0.4); }
+    16% { border-color: #ffe600; box-shadow: 0 0 15px #ffe600, inset 0 4px 8px rgba(0,0,0,0.4); }
+    33% { border-color: rgba(0,0,0,0.3); box-shadow: inset 0 4px 8px rgba(0,0,0,0.4); }
+    50% { border-color: #ffe600; box-shadow: 0 0 15px #ffe600, inset 0 4px 8px rgba(0,0,0,0.4); }
+    66% { border-color: rgba(0,0,0,0.3); box-shadow: inset 0 4px 8px rgba(0,0,0,0.4); }
+    83% { border-color: #ffe600; box-shadow: 0 0 15px #ffe600, inset 0 4px 8px rgba(0,0,0,0.4); }
+}
+
+.flash-attention .slot {
+    animation: slotFlash 1.5s ease-in-out;
+}
+
 .slot > .ball {
     position: relative;
     width: 90%;
@@ -253,8 +275,9 @@ main {
 }
 
 .dragging .ball-img {
-    filter: drop-shadow(0 15px 15px rgba(0,0,0,0.6));
-    transform: scale(1.2);
+    filter: drop-shadow(0 20px 20px rgba(0,0,0,0.6));
+    transform: scale(1.25) rotate(7deg);
+    transition: transform 0.1s;
 }
 
 #game-over-modal {
@@ -350,16 +373,30 @@ main {
 
 .floating-score {
     position: absolute;
-    color: #fff;
+    color: #ffde00; /* vibrant gold */
     font-family: inherit;
     font-weight: 900;
-    font-size: 2rem;
-    text-shadow: 0 4px 0px var(--wooden-darker), 0 6px 12px rgba(0,0,0,0.6);
+    font-size: 2.8rem;
+    text-shadow: 0 4px 0px #b36b00, 0 6px 15px rgba(0,0,0,0.7), 0 0 15px rgba(255,215,0,0.6);
     pointer-events: none;
-    animation: floatUp 1s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+    animation: floatUp 1.2s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
+    z-index: 1000;
 }
 
 @keyframes floatUp {
-    0% { transform: translate(-50%, 0) scale(1.2); opacity: 1; }
-    100% { transform: translate(-50%, -80px) scale(0.8); opacity: 0; }
+    0% { transform: translate(-50%, 0) scale(0.5); opacity: 0; }
+    20% { transform: translate(-50%, -30px) scale(1.2); opacity: 1; }
+    100% { transform: translate(-50%, -90px) scale(0.8); opacity: 0; }
+}
+
+@keyframes screenShake {
+    0% { transform: translate(0, 0); }
+    20% { transform: translate(-4px, 4px); }
+    40% { transform: translate(4px, -4px); }
+    60% { transform: translate(-4px, -4px); }
+    80% { transform: translate(4px, 4px); }
+    100% { transform: translate(0, 0); }
+}
+.shake #app {
+    animation: screenShake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }

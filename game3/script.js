@@ -1,3 +1,26 @@
+const SAMPLES = {
+    grab: new Audio('Click.wav'),
+    drop: new Audio('553430__kablazik_samples__kb_poppop_0.wav'),
+    merge: new Audio('537061__imafoley__message-pop-sound.wav'),
+    score: new Audio('Coins5 1.wav'),
+    gameover: new Audio('Coin_Result.wav')
+};
+
+function playSound(type, param = 1) {
+    if (SAMPLES[type]) {
+        const sound = SAMPLES[type].cloneNode();
+        
+        // Влияем на высоту звука (pitch) при мердже высоких уровней!
+        if (type === 'merge') {
+            sound.preservesPitch = false;
+            sound.playbackRate = Math.max(0.5, Math.min(2.0, 1 + (param - 1) * 0.05));
+        }
+        
+        sound.volume = 0.6; // Чтобы звуки аккуратно вписывались
+        sound.play().catch(e => console.log('Audio error:', e));
+    }
+}
+
 const CATEGORIES = ['Drawer', 'Flowerpot', 'GardeningGloves', 'GardeningTools', 'Yarn'];
 
 const CATEGORY_IMAGES = {
@@ -55,6 +78,14 @@ function init() {
     document.getElementById('restart-btn').addEventListener('click', () => {
         modal.classList.add('hidden');
         restartGame();
+    });
+
+    // Обработчик клика по верхнему контейнеру для напоминания взаимодействовать снизу
+    document.getElementById('grid-container').addEventListener('pointerdown', (e) => {
+        invLayer.classList.remove('flash-attention');
+        void invLayer.offsetWidth; // Триггер reflow для перезапуска анимации
+        invLayer.classList.add('flash-attention');
+        setTimeout(() => invLayer.classList.remove('flash-attention'), 1500);
     });
 }
 
@@ -165,6 +196,8 @@ function startDrag(e, index) {
     const ballData = inventory[index];
     if (!ballData) return;
     
+    playSound('grab');
+    
     e.preventDefault(); // Запретить скролл при касании
     
     const dragEl = createBallElement(ballData);
@@ -172,6 +205,12 @@ function startDrag(e, index) {
     document.body.appendChild(dragEl);
     
     draggingBall = { el: dragEl, data: ballData, slotIndex: index };
+    
+    // Прячем шар в слоте инвентаря на время переноса
+    const slotEl = invLayer.children[index];
+    if (slotEl && slotEl.querySelector('.ball')) {
+        slotEl.querySelector('.ball').style.opacity = '0';
+    }
     
     moveDrag(e.clientX, e.clientY);
     
@@ -224,12 +263,26 @@ async function onDragEnd(e) {
         dropTargetCell = null;
         
         await placeBall(r, c, data, slotIndex);
+    } else {
+        // Если предмет отпущен в неверном месте, возвращаем видимость в слоте
+        const slotEl = invLayer.children[slotIndex];
+        if (slotEl && slotEl.querySelector('.ball')) {
+            slotEl.querySelector('.ball').style.opacity = '1';
+        }
     }
 }
 
 async function placeBall(r, c, data, slotIndex) {
     isAnimating = true;
     grid[r][c] = data;
+    
+    playSound('drop');
+    
+    const cellEl = gridLayer.children[r * 5 + c];
+    if (cellEl) {
+        cellEl.classList.add('bump');
+        setTimeout(() => cellEl.classList.remove('bump'), 200);
+    }
     
     inventory[slotIndex] = { category: getRandomCategory(), level: 1 };
     renderInventory();
@@ -318,9 +371,17 @@ async function executeMergeChain(r, c) {
     }
     
     let data = grid[r][c];
+    
+    playSound('merge', data.level);
+    if (group.length >= 4) {
+        document.body.classList.add('shake');
+        setTimeout(() => document.body.classList.remove('shake'), 400);
+    }
+    
     let points = calculateScore(group.length, data.level, data.category, group);
     updateScore(points);
     showFloatingScore(points, r, c);
+    playSound('score', group.length);
     
     // Анимация слияния
     let domMatrix = Array(5).fill().map(()=>Array(5).fill(null));
@@ -393,6 +454,7 @@ function checkGameOver() {
     
     // Если пустых ячеек нет, игра окончена
     if (emptyCount === 0) {
+        playSound('gameover');
         finalScoreEl.innerText = score;
         modal.classList.remove('hidden');
     }
