@@ -9,11 +9,11 @@ const CATEGORY_IMAGES = {
 };
 
 const DOM_BG_COLORS = {
-    Drawer: 'rgba(155, 93, 229, 0.1)',
-    Flowerpot: 'rgba(255, 154, 68, 0.1)',
-    GardeningGloves: 'rgba(255, 8, 68, 0.1)',
-    GardeningTools: 'rgba(0, 198, 255, 0.1)',
-    Yarn: 'rgba(17, 153, 142, 0.1)'
+    Drawer: 'rgba(170, 175, 180, 0.15)',
+    Flowerpot: 'rgba(255, 155, 50, 0.2)',
+    GardeningGloves: 'rgba(180, 130, 90, 0.2)',
+    GardeningTools: 'rgba(120, 200, 80, 0.2)',
+    Yarn: 'rgba(70, 170, 255, 0.2)'
 };
 
 let grid = Array(5).fill().map(() => Array(5).fill(null));
