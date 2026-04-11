@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Swipe & Merge Puzzle</title>
+    <title>Beyond 2048</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
@@ -23,7 +23,7 @@
 
         <div id="game-center">
             <header>
-                <div class="logo">Swipe<span>Merge</span></div>
+                <div class="logo">Beyond<span>2048</span></div>
                 <button id="restart-level-btn" title="Начать заново">🔄</button>
             </header>
 
@@ -58,9 +58,9 @@
                     <!-- Stone Tutorial Pop-up -->
                     <div id="tutorial-overlay" class="hidden">
                         <div class="tutorial-card">
-                            <div class="tutorial-icon">🪨</div>
-                            <h2>Новый объект: КАМЕНЬ</h2>
-                            <p>Для того, чтобы уничтожить камень, нужно объединить рядом с ним блоки.</p>
+                            <div id="tutorial-icon" class="tutorial-icon">🪨</div>
+                            <h2 id="tutorial-title">Новый объект: КАМЕНЬ</h2>
+                            <p id="tutorial-text">Для того, чтобы уничтожить камень, нужно объединить рядом с ним блоки.</p>
                             <button id="tutorial-ok-btn">ПОНЯТНО</button>
                         </div>
                     </div>

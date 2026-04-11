@@ -1,4 +1,4 @@
-# Game Design Document: Swipe & Merge Puzzle (Working Title)
+# Game Design Document: Beyond 2048
 
 ## 1. Общее описание (Vision)
 Игра представляет собой гибрид базовой механики головоломки 2048 и структурной прогрессии Match-3 (Candy Crush, Playrix games).

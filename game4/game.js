@@ -69,8 +69,41 @@ const tutorialOverlay = document.getElementById('tutorial-overlay');
 const tutorialOkBtn = document.getElementById('tutorial-ok-btn');
 const skipLevelBtn = document.getElementById('skip-level-btn');
 const restartLevelBtn = document.getElementById('restart-level-btn');
+const tutorialTitle = document.getElementById('tutorial-title');
+const tutorialText = document.getElementById('tutorial-text');
+const tutorialIcon = document.getElementById('tutorial-icon');
 const resetProgressBtn = document.getElementById('reset-progress-btn');
 const editorLinkBtn = document.getElementById('editor-link-btn');
+
+const TUTORIALS = {
+    'stone': {
+        icon: '🪨',
+        title: 'Тяжёлый Камень',
+        text: 'Этот камень мешает проходу! Но он не вечен: просто соверши слияние (Merge) в соседней клетке, и он рассыплется в прах.'
+    },
+    'box': {
+        icon: '📦',
+        title: 'Хрупкий Ящик',
+        text: 'Дерево не выдержит энергии слияния! Объединяй блоки рядом с ящиком, чтобы сломать его. Некоторые ящики крепче других и требуют нескольких ударов!'
+    },
+    'frozen_block': {
+        icon: '❄️',
+        title: 'Ледяной Плен',
+        text: 'Блок вмёрз в плотный лёд и не двигается. Чтобы растопить его, ударь по нему другим блоком точно такого же номинала. Лёд треснет!'
+    },
+    'key': {
+        icon: '🔑🚪',
+        title: 'Запертые Секреты',
+        text: 'Видишь запертую дверь? Чтобы пройти дальше, тебе нужно доставить Ключ прямо к ней. Ударь ключом по двери, и путь будет открыт!'
+    },
+    'letter': {
+        icon: '✉️📬',
+        title: 'Срочная Почта',
+        text: 'Письмо должно дойти до адресата! Просто довези его до Почтового Ящика. Это кажется простым, пока на доске не станет слишком тесно!'
+    }
+};
+
+let tutorialQueue = [];
 
 async function loadLevelFile(index) {
     try {
@@ -174,8 +207,16 @@ function initGame() {
     });
 
     tutorialOkBtn.addEventListener('click', () => {
-        tutorialOverlay.classList.add('hidden');
-        localStorage.setItem('stone_tutorial_seen', 'true');
+        if (tutorialQueue.length > 0) {
+            const seenKey = tutorialQueue.shift();
+            localStorage.setItem(`tutorial_seen_${seenKey}`, 'true');
+        }
+        
+        if (tutorialQueue.length > 0) {
+            displayTutorial(tutorialQueue[0]);
+        } else {
+            tutorialOverlay.classList.add('hidden');
+        }
     });
 
     skipLevelBtn.addEventListener('click', () => {
@@ -237,15 +278,42 @@ function loadLevel(levelObj) {
     renderItems();
     overlayEl.classList.add('hidden');
     fitBoard();
-    checkStoneTutorial(levelObj);
+    checkTutorials(levelObj);
 }
 
-function checkStoneTutorial(levelObj) {
-    const hasStone = levelObj.items.some(i => i.type === 'stone');
-    const seen = localStorage.getItem('stone_tutorial_seen');
-    if (hasStone && !seen) {
-        tutorialOverlay.classList.remove('hidden');
+function checkTutorials(levelObj) {
+    tutorialQueue = [];
+    
+    // Check for each tutorial type
+    if (levelObj.items.some(i => i.type === 'stone') && !localStorage.getItem('tutorial_seen_stone')) {
+        tutorialQueue.push('stone');
     }
+    if (levelObj.items.some(i => i.type === 'box') && !localStorage.getItem('tutorial_seen_box')) {
+        tutorialQueue.push('box');
+    }
+    if (levelObj.items.some(i => i.type === 'frozen_block') && !localStorage.getItem('tutorial_seen_frozen_block')) {
+        tutorialQueue.push('frozen_block');
+    }
+    if ((levelObj.items.some(i => i.type === 'key') || levelObj.items.some(i => i.type === 'door')) && !localStorage.getItem('tutorial_seen_key')) {
+        tutorialQueue.push('key');
+    }
+    if ((levelObj.items.some(i => i.type === 'letter') || levelObj.items.some(i => i.type === 'mailbox')) && !localStorage.getItem('tutorial_seen_letter')) {
+        tutorialQueue.push('letter');
+    }
+
+    if (tutorialQueue.length > 0) {
+        displayTutorial(tutorialQueue[0]);
+    }
+}
+
+function displayTutorial(key) {
+    const data = TUTORIALS[key];
+    if (!data) return;
+
+    tutorialIcon.textContent = data.icon;
+    tutorialTitle.textContent = data.title;
+    tutorialText.textContent = data.text;
+    tutorialOverlay.classList.remove('hidden');
 }
 
 function fitBoard() {
