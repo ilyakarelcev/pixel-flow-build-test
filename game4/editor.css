@@ -220,11 +220,17 @@ input[type=range]::-webkit-slider-runnable-track {
 }
 
 .grid-cell {
+    position: absolute;
+    width: 70px;
+    height: 70px;
     border: 1px dashed rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    pointer-events: auto;
 }
 
 .item {
     cursor: pointer;
+    pointer-events: auto !important;
 }
 .item.selected {
     box-shadow: 0 0 0 4px #f1c40f, 0 4px 10px rgba(0,0,0,0.4);
@@ -305,7 +311,7 @@ button.danger:hover {
 
 #json-io {
     width: 100%;
-    min-height: 200px;
+    min-height: 600px;
     background: #111;
     color: #4cd137;
     font-family: monospace;
@@ -313,6 +319,12 @@ button.danger:hover {
     border-radius: 8px;
     border: 1px solid #444;
     resize: vertical;
+}
+
+.save-card.active {
+    border: 2px solid #f1c40f !important;
+    box-shadow: 0 0 15px rgba(241, 196, 15, 0.4);
+    background: #363636 !important;
 }
 
 .io-buttons {

@@ -1,6 +1,6 @@
 {
-  "level_id": 1659,
-  "moves_limit": 120,
+  "level_id": 3895,
+  "moves_limit": 200,
   "missions": [
     {
       "type": "collect_letter",
@@ -8,12 +8,7 @@
     },
     {
       "type": "collect_block",
-      "amount": 1,
-      "target_value": 32
-    },
-    {
-      "type": "collect_block",
-      "amount": 1,
+      "amount": 2,
       "target_value": 32
     }
   ],

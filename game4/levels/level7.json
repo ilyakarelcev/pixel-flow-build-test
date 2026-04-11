@@ -1,6 +1,6 @@
 {
-  "level_id": 1743,
-  "moves_limit": 120,
+  "level_id": 959,
+  "moves_limit": 200,
   "missions": [
     {
       "type": "collect_letter",
@@ -61,12 +61,12 @@
     {
       "x": 2,
       "y": 2,
-      "zone_id": "zone_1"
+      "zone_id": "zone_2"
     },
     {
       "x": 2,
       "y": 3,
-      "zone_id": "zone_1"
+      "zone_id": "zone_2"
     },
     {
       "x": 0,

@@ -29,11 +29,32 @@ let appState = {
     ],
     selectedTool: "zone_1", // zone_id
     selectedItemUid: null,
-    uidCounter: 1
+    uidCounter: 1,
+    activeLevelId: null
 };
 
 let isPainting = false;
 let paintMode = 'zone'; // 'zone', 'erase'
+
+const assetCache = {};
+const assetPaths = {
+    'box': 'Art/Box.png',
+    'stone': 'Art/Stone.png',
+    'wall': 'Art/Wall.png',
+    'ice': 'Art/Ice.png'
+};
+
+async function preloadAssets() {
+    const promises = Object.entries(assetPaths).map(([name, path]) => {
+        return new Promise(resolve => {
+            const img = new Image();
+            img.onload = () => { assetCache[name] = img; resolve(); };
+            img.onerror = () => { console.warn("Failed to load", path); resolve(); };
+            img.src = path;
+        });
+    });
+    await Promise.all(promises);
+}
 
 // DOM Elements
 const boardBg = document.getElementById('board-background');
@@ -53,8 +74,8 @@ function initEditor() {
         }
     }
     
+    preloadAssets().then(() => renderAll());
     bindUIEvents();
-    renderAll();
 }
 
 function bindUIEvents() {
@@ -344,13 +365,17 @@ function renderObjectsPalette() {
     objectsPalette.innerHTML = '';
     paletteObjects.forEach(obj => {
         let el = document.createElement('div');
-        el.className = `item type-${obj.type} palette-object`;
+        el.className = `item palette-object`;
+        
+        let inner = document.createElement('div');
+        inner.className = `item-inner type-${obj.type}`;
+        el.appendChild(inner);
         
         if (obj.type === 'block' || obj.type === 'frozen_block') {
-            el.textContent = obj.value;
-            el.setAttribute('data-level', Math.log2(obj.value));
+            inner.textContent = obj.value;
+            inner.setAttribute('data-level', Math.log2(obj.value));
         } else if (obj.type === 'box') {
-            el.setAttribute('data-hp', obj.hp);
+            inner.setAttribute('data-hp', obj.hp);
         }
         
         // Drag logic
@@ -419,14 +444,18 @@ function renderItems() {
     boardItems.innerHTML = '';
     appState.items.forEach(item => {
         let el = document.createElement('div');
-        el.className = `item type-${item.type} ${appState.selectedItemUid === item.uid ? 'selected' : ''}`;
+        el.className = `item ${appState.selectedItemUid === item.uid ? 'selected' : ''}`;
         el.style.transform = `translate(${item.x * STEP + CELL_GAP/2}px, ${item.y * STEP + CELL_GAP/2}px)`;
         
+        let inner = document.createElement('div');
+        inner.className = `item-inner type-${item.type}`;
+        el.appendChild(inner);
+
         if (item.type === 'block' || item.type === 'frozen_block') {
-            el.textContent = item.value;
-            el.setAttribute('data-level', Math.log2(item.value));
+            inner.textContent = item.value;
+            inner.setAttribute('data-level', Math.log2(item.value));
         } else if (item.type === 'box') {
-            el.setAttribute('data-hp', item.hp);
+            inner.setAttribute('data-hp', item.hp);
         }
         
         // Item clicking
@@ -642,6 +671,30 @@ function fallbackCopy(text) {
     }
 }
 
+function showSaveFeedback(id) {
+    // We find the button by the id we passed to overwriteSave
+    const cards = document.querySelectorAll('.save-card');
+    let targetBtn = null;
+    
+    // Find the 'Save' button inside the card that matches this id
+    cards.forEach(card => {
+        const saveBtn = card.querySelector(`button[onclick*="window.overwriteSave('${id}')"]`);
+        if (saveBtn) targetBtn = saveBtn;
+    });
+
+    if (targetBtn) {
+        const originalText = targetBtn.innerText;
+        targetBtn.innerText = "Saved! ✓";
+        targetBtn.style.background = "#059669";
+        targetBtn.style.fontWeight = "bold";
+        setTimeout(() => {
+            targetBtn.innerText = originalText;
+            targetBtn.style.background = "";
+            targetBtn.style.fontWeight = "";
+        }, 2000);
+    }
+}
+
 function showCopyFeedback() {
     // Show a small toast or visual change
     const btn = document.getElementById('btn-copy-current');
@@ -783,7 +836,9 @@ async function saveCurrentProject() {
 
     try {
         const levelsCol = collection(db, `users/${firebaseUser.uid}/levels`);
-        await setDoc(doc(levelsCol), projData);
+        const docRef = doc(levelsCol);
+        await setDoc(docRef, projData);
+        appState.activeLevelId = docRef.id;
         loadSaves(); // refresh cards
     } catch (err) {
         console.error("Save error:", err);
@@ -791,42 +846,58 @@ async function saveCurrentProject() {
     }
 }
 
+function getBlockColors(level) {
+    const palette = {
+        1: { bg: ['#ffffff', '#f1f2f6'], text: '#4a2e15' },
+        2: { bg: ['#fff200', '#feca57'], text: '#4a2e15' },
+        3: { bg: ['#fab1a0', '#ff8d1e'], text: '#ffffff' },
+        4: { bg: ['#ff7675', '#d63031'], text: '#ffffff' },
+        5: { bg: ['#fda7df', '#f368e0'], text: '#ffffff' },
+        6: { bg: ['#c56cf0', '#8c7ae6'], text: '#ffffff' },
+        7: { bg: ['#f9ca24', '#f0932b'], text: '#4a2e15' },
+        8: { bg: ['#ff9f43', '#ff6b6b'], text: '#ffffff' },
+        9: { bg: ['#badc58', '#6ab04c'], text: '#ffffff' },
+        10: { bg: ['#a29bfe', '#6c5ce7'], text: '#ffffff' },
+        11: { bg: ['#ff0844', '#ffb199'], text: '#ffffff' }
+    };
+    return palette[level] || { bg: ['#333', '#000'], text: '#fff' };
+}
+
 function generateSnapshot() {
-    const pSize = 16; 
-    const margin = 4;
-    // We want the canvas to be just big enough for the grid
+    const pSize = 40; // larger for better quality
+    const margin = 10;
     const width = appState.gridX * pSize + margin * 2;
     const height = appState.gridY * pSize + margin * 2;
     
-    // We can force a square canvas if desired, but object-fit: contain on the HTML side takes care of padding
     const canvas = document.createElement('canvas');
     canvas.width = width;
     canvas.height = height;
     const ctx = canvas.getContext('2d');
     
-    // Background color roughly matching the editor theme (dark)
-    ctx.fillStyle = '#1e1e1e';
+    ctx.fillStyle = '#141a21';
     ctx.fillRect(0, 0, width, height);
 
-    // Draw the grid cells
+    // Draw Grid Slots (Background)
     for(let y=0; y<appState.gridY; y++) {
         for(let x=0; x<appState.gridX; x++) {
-            const key = `${x},${y}`;
-            const zoneId = appState.board_cells[key];
             const px = margin + x * pSize;
             const py = margin + y * pSize;
+            const key = `${x},${y}`;
             
-            // Background cell box (hole)
-            ctx.fillStyle = '#111';
-            ctx.fillRect(px + 1, py + 1, pSize - 2, pSize - 2);
+            // Draw slot
+            ctx.fillStyle = '#1e252f';
+            ctx.beginPath();
+            ctx.roundRect(px + 2, py + 2, pSize - 4, pSize - 4, 8);
+            ctx.fill();
 
-            // Draw zone color if it exists
-            if(zoneId) {
-                // If it starts with # we use it, if it's zone_x we get it from getZoneColor
-                let color = getZoneColor(zoneId);
-                ctx.fillStyle = color;
-                ctx.globalAlpha = 0.5;
-                ctx.fillRect(px + 1, py + 1, pSize - 2, pSize - 2);
+            // Draw Zone highlight if present
+            const zoneId = appState.board_cells[key];
+            if (zoneId) {
+                ctx.fillStyle = getZoneColor(zoneId);
+                ctx.globalAlpha = 0.2;
+                ctx.beginPath();
+                ctx.roundRect(px + 2, py + 2, pSize - 4, pSize - 4, 8);
+                ctx.fill();
                 ctx.globalAlpha = 1.0;
             }
         }
@@ -836,34 +907,59 @@ function generateSnapshot() {
     appState.items.forEach(item => {
         const px = margin + item.x * pSize;
         const py = margin + item.y * pSize;
+        const drawRect = (color, r) => {
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.roundRect(px + 4, py + 4, pSize - 8, pSize - 8, r || 8);
+            ctx.fill();
+        };
 
-        if(item.type === 'block' || item.type === 'frozen_block') {
-            ctx.fillStyle = '#ecf0f1';
-            ctx.fillRect(px + 2, py + 2, pSize - 4, pSize - 4);
-            if(item.type === 'frozen_block') {
-                ctx.fillStyle = 'rgba(52, 152, 219, 0.4)';
-                ctx.fillRect(px + 2, py + 2, pSize - 4, pSize - 4);
-            }
-            // Text values
-            ctx.fillStyle = '#2c3e50';
-            ctx.font = 'bold 8px Arial';
+        if (item.type === 'block' || item.type === 'frozen_block') {
+            const level = Math.log2(item.value);
+            const colors = getBlockColors(level);
+            
+            // Gradient
+            const grad = ctx.createLinearGradient(px, py, px, py + pSize);
+            grad.addColorStop(0, colors.bg[0]);
+            grad.addColorStop(1, colors.bg[1]);
+            
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.roundRect(px + 4, py + 4, pSize - 8, pSize - 8, 8);
+            ctx.fill();
+
+            // Text
+            ctx.fillStyle = colors.text;
+            ctx.font = `bold ${Math.floor(pSize * 0.4)}px Outfit, Arial`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            let printVal = item.value > 1000 ? (item.value/1000).toFixed(1)+'k' : item.value;
-            ctx.fillText(printVal, px + pSize/2, py + pSize/2);
-            
-        } else if(item.type === 'box') {
-            ctx.fillStyle = '#e67e22'; // orange-ish box
-            ctx.fillRect(px + 3, py + 3, pSize - 6, pSize - 6);
-        } else if(item.type === 'door' || item.type === 'wall') {
-            ctx.fillStyle = '#7f8c8d'; // gray
-            ctx.fillRect(px + 1, py + 1, pSize - 2, pSize - 2);
-        } else {
-             // other generic items (switches, mailboxes)
-            ctx.fillStyle = '#f1c40f';
-            ctx.beginPath();
-            ctx.arc(px + pSize/2, py + pSize/2, pSize/2 - 2, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.fillText(item.value, px + pSize/2, py + pSize/2);
+
+            if (item.type === 'frozen_block' && assetCache['ice']) {
+                ctx.drawImage(assetCache['ice'], px - 2, py - 2, pSize + 4, pSize + 4);
+            }
+        } 
+        else if (item.type === 'box' && assetCache['box']) {
+            ctx.drawImage(assetCache['box'], px + 4, py + 4, pSize - 8, pSize - 8);
+            ctx.fillStyle = "#fff";
+            ctx.font = `bold ${Math.floor(pSize * 0.3)}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.fillText(`H:${item.hp}`, px + pSize/2, py + pSize * 0.85);
+        }
+        else if (item.type === 'stone' && assetCache['stone']) {
+            ctx.drawImage(assetCache['stone'], px + 4, py + 4, pSize - 8, pSize - 8);
+        }
+        else if (item.type === 'wall' && assetCache['wall']) {
+            ctx.drawImage(assetCache['wall'], px+1, py+1, pSize-2, pSize-2);
+        }
+        else {
+            // Emojis
+            const emojis = { 'key': '🔑', 'door': '🚪', 'mailbox': '📫', 'letter': '✉️' };
+            const emoji = emojis[item.type] || '?';
+            ctx.font = `${Math.floor(pSize * 0.7)}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(emoji, px + pSize/2, py + pSize/2);
         }
     });
 
@@ -880,14 +976,15 @@ async function loadSaves() {
         const cards = savesCarousel.querySelectorAll('.save-card:not(.create-new)');
         cards.forEach(c => c.remove());
 
-        const q = query(collection(db, `users/${firebaseUser.uid}/levels`), orderBy("timestamp", "desc"));
+        const q = query(collection(db, `users/${firebaseUser.uid}/levels`), orderBy("timestamp", "asc"));
         const querySnapshot = await getDocs(q);
         querySnapshot.forEach((docSnap) => {
             const data = docSnap.data();
             if(data.projectType !== "swipe_merge_level") return; // Filter only this project's levels
 
+            const isActive = appState.activeLevelId === docSnap.id;
             const card = document.createElement('div');
-            card.className = 'save-card';
+            card.className = `save-card ${isActive ? 'active' : ''}`;
             // Explicit size rules to make the layout predictable and visually appealing
             card.style.cssText = 'flex-shrink: 0; width: 140px; height: 160px; background: #2c2c2c; padding: 10px; border-radius: 8px; display: flex; flex-direction: column; justify-content: space-between; border: 1px solid #444; position: relative; cursor: default;';
             card.innerHTML = `
@@ -897,7 +994,7 @@ async function loadSaves() {
                 </div>
                 <button title="Copy JSON" style="position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,0.4); border: none; border-radius: 4px; color: #fff; cursor: pointer; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 10px; transition: background 0.2s;" onmouseover="this.style.background='rgba(0,0,0,0.7)'" onmouseout="this.style.background='rgba(0,0,0,0.4)'" onclick="event.stopPropagation(); window.copySavedJson('${btoa(encodeURIComponent(data.json))}')">📋</button>
                 <div class="save-controls" style="display: flex; gap: 5px; flex-wrap: nowrap; margin-top: 8px;">
-                    <button class="primary" style="flex: 1; padding: 5px; font-size: 10px; cursor: pointer; background: #3b82f6; color: white; border: none; border-radius: 4px;" onclick="event.stopPropagation(); window.openJson('${btoa(encodeURIComponent(data.json))}')">Open</button>
+                    <button class="primary" style="flex: 1; padding: 5px; font-size: 10px; cursor: pointer; background: #3b82f6; color: white; border: none; border-radius: 4px;" onclick="event.stopPropagation(); window.openJson('${btoa(encodeURIComponent(data.json))}', '${docSnap.id}')">Open</button>
                     <button class="secondary" style="flex: 1; padding: 5px; font-size: 10px; cursor: pointer; background:#059669; color:#fff; border: none; border-radius: 4px;" onclick="event.stopPropagation(); window.overwriteSave('${docSnap.id}')">Save</button>
                     <button class="danger" style="flex: 1; padding: 5px; font-size: 10px; cursor: pointer; background:#ef4444; color:#fff; border: none; border-radius: 4px;" onclick="event.stopPropagation(); window.delSave('${docSnap.id}')">Del</button>
                 </div>
@@ -916,11 +1013,15 @@ function clearSaves() {
     cards.forEach(c => c.remove());
 }
 
-window.openJson = function (b64json) {
+window.openJson = function (b64json, id) {
     try {
         const decoded = decodeURIComponent(atob(b64json));
         jsonIo.value = decoded;
         
+        if (id) {
+            appState.activeLevelId = id;
+        }
+
         let json = JSON.parse(decoded);
         appState.moves_limit = json.moves_limit || 25;
         appState.missions = json.missions || [];
@@ -944,6 +1045,7 @@ window.openJson = function (b64json) {
         appState.selectedItemUid = null;
         
         renderAll();
+        loadSaves(); // refresh cards to update active highlight
     } catch (e) {
         console.error("Load JSON error", e);
         alert("Failed to parse or load JSON from cloud!");
@@ -952,22 +1054,23 @@ window.openJson = function (b64json) {
 
 window.overwriteSave = async function (id) {
     if (!firebaseUser) return;
-    if (confirm("Overwrite this cloud save with your current level data?")) {
-        const snap = generateSnapshot();
-        const projData = {
-            userId: firebaseUser.uid,
-            timestamp: Date.now(),
-            image: snap,
-            json: generateJSONString(),
-            projectType: "swipe_merge_level"
-        };
-        try {
-            await setDoc(doc(db, `users/${firebaseUser.uid}/levels`, id), projData, { merge: true });
-            loadSaves();
-        } catch (e) {
-            console.error(e);
-            alert("Failed to overwrite. Check console.");
-        }
+    
+    appState.activeLevelId = id;
+    const snap = generateSnapshot();
+    const projData = {
+        userId: firebaseUser.uid,
+        timestamp: Date.now(),
+        image: snap,
+        json: generateJSONString(),
+        projectType: "swipe_merge_level"
+    };
+    try {
+        await setDoc(doc(db, `users/${firebaseUser.uid}/levels`, id), projData, { merge: true });
+        showSaveFeedback(id);
+        loadSaves();
+    } catch (e) {
+        console.error(e);
+        alert("Failed to overwrite. Check console.");
     }
 };
 

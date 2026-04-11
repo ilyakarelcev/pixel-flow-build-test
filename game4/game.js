@@ -34,6 +34,13 @@ const sfxMerge = new Audio('553430__kablazik_samples__kb_poppop_0.wav');
 sfxMerge.volume = 0.2;
 const sfxCollect = new Audio('537061__imafoley__message-pop-sound.wav');
 sfxCollect.volume = 0.25;
+const sfxBoxDamage = new Audio('553430__kablazik_samples__kb_poppop_0.wav');
+sfxBoxDamage.volume = 0.4;
+const sfxDoorOpen = new Audio('Coin_Result.wav');
+sfxDoorOpen.volume = 0.4;
+const sfxStoneBreak = new Audio('553430__kablazik_samples__kb_poppop_0.wav');
+sfxStoneBreak.volume = 0.5;
+sfxStoneBreak.playbackRate = 0.8; // Lower pitch for stone
 
 const CELL_SIZE = 70;
 const ITEM_SIZE = 66;
@@ -74,6 +81,9 @@ const tutorialText = document.getElementById('tutorial-text');
 const tutorialIcon = document.getElementById('tutorial-icon');
 const resetProgressBtn = document.getElementById('reset-progress-btn');
 const editorLinkBtn = document.getElementById('editor-link-btn');
+const helpBtn = document.getElementById('help-btn');
+
+let lastTriggeredTutorial = null;
 
 const TUTORIALS = {
     'stone': {
@@ -216,6 +226,10 @@ function initGame() {
             displayTutorial(tutorialQueue[0]);
         } else {
             tutorialOverlay.classList.add('hidden');
+            // Show help button if we have a current tutorial for this level
+            if (lastTriggeredTutorial) {
+                helpBtn.classList.remove('hidden');
+            }
         }
     });
 
@@ -227,6 +241,13 @@ function initGame() {
 
     restartLevelBtn.addEventListener('click', () => {
         loadLevel(JSON.parse(levelJsonInput.value));
+    });
+
+    helpBtn.addEventListener('click', () => {
+        if (lastTriggeredTutorial) {
+            displayTutorial(lastTriggeredTutorial);
+            helpBtn.classList.add('hidden');
+        }
     });
 
     resetProgressBtn.addEventListener('click', () => {
@@ -242,6 +263,9 @@ function initGame() {
     });
 
     window.addEventListener('resize', fitBoard);
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', fitBoard);
+    }
 }
 
 function loadLevel(levelObj) {
@@ -278,6 +302,10 @@ function loadLevel(levelObj) {
     renderItems();
     overlayEl.classList.add('hidden');
     fitBoard();
+    
+    lastTriggeredTutorial = null;
+    helpBtn.classList.add('hidden');
+    
     checkTutorials(levelObj);
 }
 
@@ -310,10 +338,12 @@ function displayTutorial(key) {
     const data = TUTORIALS[key];
     if (!data) return;
 
+    lastTriggeredTutorial = key;
     tutorialIcon.textContent = data.icon;
     tutorialTitle.textContent = data.title;
     tutorialText.textContent = data.text;
     tutorialOverlay.classList.remove('hidden');
+    helpBtn.classList.add('hidden'); // Hide help while tutorial is open
 }
 
 function fitBoard() {
@@ -322,14 +352,55 @@ function fitBoard() {
     if (!ow || !oh) return;
 
     let scaler = document.getElementById('board-scaler');
-    let maxWid = scaler.clientWidth - 20; 
-    let maxHei = scaler.clientHeight - 20; 
     
-    let scWid = maxWid / ow;
-    let scHei = maxHei / oh;
-    let scale = Math.min(1, scWid, scHei);
+    // Calculate total reserved height from UI elements above the board
+    const topStuff = document.getElementById('top-panel-container');
+    const header = document.querySelector('header');
     
+    // Get actual heights of header and top panel
+    const headerHeight = header ? header.offsetHeight : 0;
+    const topPanelHeight = topStuff ? topStuff.offsetHeight : 0;
+    
+    // Base spacing between elements
+    const spacing = 40; 
+    const topReserved = headerHeight + topPanelHeight + spacing;
+    
+    // Available dimensions - ensure we use the dynamic viewport height
+    let realAvailableWidth = (scaler && scaler.clientWidth > 0) ? scaler.clientWidth : window.innerWidth;
+    let availableWidth = realAvailableWidth - 30; // 15px padding on each side
+    // Use visualViewport if available (better on mobile with dynamic address bar)
+    let vh = (window.visualViewport ? window.visualViewport.height : window.innerHeight);
+    let availableHeight = vh - topReserved - 20; // 20px bottom safety margin
+    
+    let scWid = availableWidth / ow;
+    let scHei = availableHeight / oh;
+    
+    // Calculate scale and ensure it doesn't exceed 1.0
+    let scale = Math.min(1.0, scWid, scHei);
+    
+    // Use top-left origin and manually center — flex centering doesn't work with transform scale
+    boardContainer.style.transformOrigin = '0 0';
     boardContainer.style.transform = `scale(${scale})`;
+
+    // Center the scaled board within the available width
+    let boardVisualWidth = ow * scale;
+    let marginLeft = Math.max(0, (realAvailableWidth - boardVisualWidth) / 2);
+    boardContainer.style.marginLeft = marginLeft + 'px';
+
+    // Sync HUD row width with board width
+    const hudRow = document.getElementById('hud-row');
+    const movesBox = document.getElementById('moves-container');
+    if (hudRow && movesBox) {
+        
+        // Ensure hud-row matches the visual width of the board
+        hudRow.style.width = boardVisualWidth + 'px';
+        hudRow.style.minWidth = '0'; 
+        
+        if (missionsPanelEl) {
+            missionsPanelEl.style.flex = "1";
+            missionsPanelEl.style.minWidth = "0";
+        }
+    }
 }
 
 function queueInput(dx, dy) {
@@ -386,7 +457,7 @@ function handleSwipe(dx, dy, fromQueue = false) {
         i._popAnimating = false;
         if (i.element) {
             i.element.style.transition = 'none';
-            i.element.style.transform = `translate(${i.x * STEP + ITEM_OFFSET}px, ${i.y * STEP + ITEM_OFFSET}px)`;
+            i.element.style.transform = `translate3d(${i.x * STEP + ITEM_OFFSET}px, ${i.y * STEP + ITEM_OFFSET}px, 0)`;
             i.element.style.opacity = '';
             i.element.style.filter = '';
             i.element.style.boxShadow = '';
@@ -443,9 +514,45 @@ function handleSwipe(dx, dy, fromQueue = false) {
             }
         });
 
+        items.forEach(i => {
+            if (i.iceShatter) {
+                createIceShatterEffect(i.x, i.y);
+                i.iceShatter = false;
+            }
+            if (i.isDoorOpening) {
+                createDoorParticles(i.x, i.y);
+                sfxDoorOpen.currentTime = 0;
+                if (sfxDoorOpen.paused) sfxDoorOpen.play().catch(e => {});
+                if (i.element) {
+                    const inner = i.element.querySelector('.item-inner');
+                    if (inner) {
+                        inner.classList.remove('door-open-shake');
+                        void inner.offsetWidth;
+                        inner.classList.add('door-open-shake');
+                    }
+                }
+                i.isDoorOpening = false;
+            }
+            if (i.isKeyOpening) {
+                if (i.element) {
+                    const inner = i.element.querySelector('.item-inner');
+                    if (inner) {
+                        inner.classList.remove('key-unlock-spin');
+                        void inner.offsetWidth;
+                        inner.classList.add('key-unlock-spin');
+                    }
+                }
+                i.isKeyOpening = false;
+            }
+        });
+
         applyPostMoveEffects(merges);
         updateVisualLevels();
         collectMissionBlocks();
+        
+        movesLeft--;
+        updateUI(); // Update UI BEFORE removeDestroyedDOM so fly-to targets exist
+        
         removeDestroyedDOM();
 
         if (merges.length > 0) {
@@ -453,41 +560,44 @@ function handleSwipe(dx, dy, fromQueue = false) {
             sfxMerge.play().catch(e => {});
         }
 
-        // JS-driven merge-pop: scale up with glow, then back
-        items.forEach(i => {
-             if (i.merged && i.element && !i.toBeDestroyed) {
-                 let x = i.x * STEP + ITEM_OFFSET, y = i.y * STEP + ITEM_OFFSET;
-                 i.element.className = `item type-${i.type}`;
-                 if (i.type === 'block' || i.type === 'frozen_block') {
-                     i.element.textContent = i.value;
-                     i.element.setAttribute('data-level', Math.log2(i.value));
-                 }
-                 i.element.style.transition = `transform calc(0.15s * var(--anim-speed)) cubic-bezier(0.175, 0.885, 0.32, 1.275), filter calc(0.15s * var(--anim-speed)), box-shadow calc(0.15s * var(--anim-speed))`;
-                 i.element.style.transform = `translate(${x}px, ${y}px) scale(1.25)`;
-                 i.element.style.filter = 'brightness(1.6)';
-                 i.element.style.boxShadow = '0 0 30px rgba(255,255,255,0.9)';
-                 i.element.style.zIndex = '20';
+        // Filter out items that were just marked for destruction
+        items = items.filter(i => !i.toBeDestroyed);
 
-                 setTimeout(() => {
-                     if (!i.element) return;
-                     i.element.style.transition = `transform calc(0.15s * var(--anim-speed)) ease-out, filter calc(0.15s * var(--anim-speed)), box-shadow calc(0.15s * var(--anim-speed))`;
-                     i.element.style.transform = `translate(${x}px, ${y}px)`;
-                     i.element.style.filter = '';
-                     i.element.style.boxShadow = '';
-                     i.element.style.zIndex = '';
-                 }, 150 * animSpeed);
-             }
+        spawnNewBlocks();
+        renderItems();
+
+        // JS-driven merge-pop: scale up with glow, then back
+        // We start this at the same time as new block spawning for a more dynamic board
+        items.forEach(i => {
+            if (i.merged && i.element && !i.toBeDestroyed) {
+                let x = i.x * STEP + ITEM_OFFSET, y = i.y * STEP + ITEM_OFFSET;
+                const inner = i.element.querySelector('.item-inner');
+                if (inner) {
+                    if (i.type === 'block' || i.type === 'frozen_block') {
+                        inner.textContent = i.value;
+                        inner.setAttribute('data-level', Math.log2(i.value));
+                    }
+                }
+                // More intense, faster pop effect
+                i.element.style.transition = `transform calc(0.1s * var(--anim-speed)) cubic-bezier(0.175, 0.885, 0.32, 1.275), filter calc(0.1s * var(--anim-speed)), box-shadow calc(0.1s * var(--anim-speed))`;
+                i.element.style.transform = `translate3d(${x}px, ${y}px, 0) scale(1.35)`;
+                i.element.style.filter = 'brightness(1.8) saturate(1.2)';
+                i.element.style.boxShadow = '0 0 40px rgba(255,255,255,0.9)';
+                i.element.style.zIndex = '100';
+
+                setTimeout(() => {
+                    if (!i.element) return;
+                    i.element.style.transition = `transform calc(0.15s * var(--anim-speed)) ease-out, filter calc(0.15s * var(--anim-speed)), box-shadow calc(0.15s * var(--anim-speed))`;
+                    i.element.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+                    i.element.style.filter = '';
+                    i.element.style.boxShadow = '';
+                    i.element.style.zIndex = '';
+                }, 100 * animSpeed);
+            }
         });
 
         setTimeout(() => {
-            items = items.filter(i => !i.toBeDestroyed);
-            items.forEach(i => { i.merged = false; });
-
-            spawnNewBlocks();
-            renderItems();
-
-            movesLeft--;
-            updateUI();
+            items.forEach(i => { i.merged = false; }); // Reset flags after animation triggers
 
             if (checkWin()) {
                 showGameOver(true);
@@ -499,7 +609,7 @@ function handleSwipe(dx, dy, fromQueue = false) {
                 isAnimating = false;
                 flushInputQueue();
             }
-        }, popTime);
+        }, 250 * animSpeed);
     }, waitTime);
 }
 
@@ -544,10 +654,12 @@ function simulateMove(dx, dy) {
                     interacted = true;
                 } else if (item.type === 'key' && nextItem.type === 'door') {
                     item.toBeDestroyed = true;
+                    item.isKeyOpening = true;
                     nextItem.toBeDestroyed = true;
+                    nextItem.isDoorOpening = true;
                     nextItem.flyToMission = 'open_door';
                     grid[item.y][item.x] = null;
-                    grid[ny][nx] = null;
+                    // grid[ny][nx] = null; // keep door as obstacle for the rest of this turn
                     item.x = nx; item.y = ny; 
                     trackMission('open_door');
                     if (nextItem.activates_zone) {
@@ -565,12 +677,18 @@ function simulateMove(dx, dy) {
                     turnMoved = true;
                     interacted = true;
                 } else if (item.type === 'block' && nextItem.type === 'frozen_block' && item.value === nextItem.value) {
-                    // Defrost: flying block stops adjacent, frozen block becomes regular
-                    // Neither merges this turn (per GDD)
-                    nextItem.type = 'block';
+                    // Immediate Merge: flying block hits frozen block, results in value*2 block
+                    nextItem.nextValue = item.value * 2;
+                    nextItem.type = 'block'; 
                     nextItem.merged = true;
-                    item.merged = true;
+                    nextItem.iceShatter = true;
+                    item.toBeDestroyed = true;
+                    item.mergeDestroyed = true;
+                    grid[item.y][item.x] = null;
+                    item.x = nx; item.y = ny;
+                    mergesThisTurn.push({x: nx, y: ny});
                     turnMoved = true;
+                    interacted = true;
                     if (nextItem.activates_zone) {
                         activateZone(nextItem.activates_zone);
                     }
@@ -610,6 +728,19 @@ function applyPostMoveEffects(mergesThisTurn) {
                     if (adj.activates_zone) {
                         activateZone(adj.activates_zone);
                     }
+                } else {
+                    // Box Hit Effects
+                    if (adj.element) {
+                        const inner = adj.element.querySelector('.item-inner');
+                        if (inner) {
+                            inner.classList.remove('shake-item');
+                            void inner.offsetWidth;
+                            inner.classList.add('shake-item');
+                        }
+                        createBoxParticles(adj.x, adj.y);
+                    }
+                    sfxBoxDamage.currentTime = 0;
+                    sfxBoxDamage.play().catch(e => {});
                 }
             } else if (adj && adj.type === 'stone') {
                 adj.toBeDestroyed = true;
@@ -626,12 +757,19 @@ function applyPostMoveEffects(mergesThisTurn) {
 }
 
 function trackMission(type, params={}) {
-    missionState.forEach(m => {
-        if (m.type === type) {
-            if (type === 'collect_block' && m.target_value === params.value) m.progress++;
-            else if (type !== 'collect_block') m.progress++;
+    // Find the first matching mission that is not yet completed
+    const matchingMission = missionState.find(m => {
+        if (m.progress >= m.amount) return false;
+        if (m.type !== type) return false;
+        if (type === 'collect_block') {
+            return m.target_value === params.value;
         }
+        return true;
     });
+
+    if (matchingMission) {
+        matchingMission.progress++;
+    }
 }
 
 function collectMissionBlocks() {
@@ -741,43 +879,164 @@ function showGameOver(isWin) {
 
 function renderBoardGrid() {
     boardGridEl.innerHTML = '';
+    if (!currentLevel || !currentLevel.board_cells || currentLevel.board_cells.length === 0) return;
+    
     const lookup = new Set(currentLevel.board_cells.map(c => `${c.x},${c.y}`));
     
     currentLevel.board_cells.forEach(c => {
-        let el = document.createElement('div');
-        el.className = 'grid-cell';
-        
-        // Neighbor checks for rounding
-        if (!lookup.has(`${c.x-1},${c.y}`) && !lookup.has(`${c.x},${c.y-1}`)) el.classList.add('is-tl');
-        if (!lookup.has(`${c.x+1},${c.y}`) && !lookup.has(`${c.x},${c.y-1}`)) el.classList.add('is-tr');
-        if (!lookup.has(`${c.x-1},${c.y}`) && !lookup.has(`${c.x},${c.y+1}`)) el.classList.add('is-bl');
-        if (!lookup.has(`${c.x+1},${c.y}`) && !lookup.has(`${c.x},${c.y+1}`)) el.classList.add('is-br');
-        
-        el.style.transform = `translate(${c.x * STEP}px, ${c.y * STEP}px)`;
-        boardGridEl.appendChild(el);
+        const hasL = lookup.has(`${c.x-1},${c.y}`);
+        const hasR = lookup.has(`${c.x+1},${c.y}`);
+        const hasU = lookup.has(`${c.x},${c.y-1}`);
+        const hasD = lookup.has(`${c.x},${c.y+1}`);
+
+        // Generator for building perfectly tiled straight-edged blocks
+        const createTile = (className, pad, radius, zIndex, offsetY = 0) => {
+            let el = document.createElement('div');
+            el.className = className;
+            
+            let left = c.x * STEP;
+            let top = c.y * STEP;
+            // Add 1px safety overlap to right and bottom neighbors to prevent scaler anti-aliasing gaps
+            let width = STEP + (hasR ? 1 : 0);
+            let height = STEP + (hasD ? 1 : 0);
+            
+            if (!hasL) { left -= pad; width += pad; }
+            if (!hasR) { width += pad; }
+            if (!hasU) { top -= pad; height += pad; }
+            if (!hasD) { height += pad; }
+            
+            // Round corners only on true outer extreme edges
+            let brTL = (!hasU && !hasL) ? radius : 0;
+            let brTR = (!hasU && !hasR) ? radius : 0;
+            let brBL = (!hasD && !hasL) ? radius : 0;
+            let brBR = (!hasD && !hasR) ? radius : 0;
+            
+            el.style.width = `${width}px`;
+            el.style.height = `${height}px`;
+            el.style.borderRadius = `${brTL}px ${brTR}px ${brBR}px ${brBL}px`;
+            el.style.transform = `translate3d(${left}px, ${top + offsetY}px, 0)`;
+            el.style.zIndex = zIndex;
+            boardGridEl.appendChild(el);
+        };
+
+        // Reduced paddings (-30%) and slightly adjusted corner radiuses
+        createTile('grid-shadow', 14, 26, 5, 8); // Shifted down 8px
+        createTile('grid-border', 14, 26, 10, 0);
+        createTile('grid-base', 8, 20, 20, 0);
+
+        let slot = document.createElement('div');
+        slot.className = 'grid-slot';
+        slot.style.transform = `translate3d(${c.x * STEP + 4}px, ${c.y * STEP + 4}px, 0)`;
+        slot.style.zIndex = 30;
+        boardGridEl.appendChild(slot);
     });
+
+    // Generate Perfect Concave Inner Corners (Fillets)
+    let minX = Math.min(...currentLevel.board_cells.map(c => c.x));
+    let maxX = Math.max(...currentLevel.board_cells.map(c => c.x));
+    let minY = Math.min(...currentLevel.board_cells.map(c => c.y));
+    let maxY = Math.max(...currentLevel.board_cells.map(c => c.y));
+
+    const createInnerFillet = (layer, facing, ix, iy, r) => {
+        if (r <= 0) return;
+        let wrap = document.createElement('div');
+        let zIndex = layer === 'shadow' ? 5 : (layer === 'border' ? 10 : 20);
+        wrap.style.position = 'absolute';
+        wrap.style.overflow = 'hidden';
+        
+        let left = ix;
+        let top = iy;
+        if (facing === 'TL') { left -= r; top -= r; }
+        if (facing === 'TR') { top -= r; }
+        if (facing === 'BL') { left -= r; }
+        
+        let circle = document.createElement('div');
+        circle.style.position = 'absolute';
+        circle.style.width = `${r * 2}px`;
+        circle.style.height = `${r * 2}px`;
+        circle.style.borderRadius = '50%';
+        
+        let color = '';
+        if (layer === 'shadow') color = '#4C607E';
+        if (layer === 'border') color = '#7A93B9';
+        if (layer === 'base') color = '#A4B1D3';
+        circle.style.boxShadow = `0 0 0 50px ${color}`;
+
+        if (facing === 'TL') { circle.style.left = `-${r}px`; circle.style.top = `-${r}px`; }
+        if (facing === 'TR') { circle.style.left = `0px`; circle.style.top = `-${r}px`; }
+        if (facing === 'BL') { circle.style.left = `-${r}px`; circle.style.top = `0px`; }
+        if (facing === 'BR') { circle.style.left = `0px`; circle.style.top = `0px`; }
+
+        wrap.style.width = `${r + 1}px`;
+        wrap.style.height = `${r + 1}px`;
+        if (facing === 'TL') {
+            wrap.style.transform = `translate3d(${left}px, ${top}px, 0)`;
+        } else if (facing === 'TR') {
+            wrap.style.transform = `translate3d(${left - 1}px, ${top}px, 0)`;
+            circle.style.left = `1px`;
+        } else if (facing === 'BL') {
+            wrap.style.transform = `translate3d(${left}px, ${top - 1}px, 0)`;
+            circle.style.top = `1px`;
+        } else if (facing === 'BR') {
+            wrap.style.transform = `translate3d(${left - 1}px, ${top - 1}px, 0)`;
+            circle.style.left = `1px`;
+            circle.style.top = `1px`;
+        }
+
+        wrap.style.zIndex = zIndex;
+        wrap.appendChild(circle);
+        boardGridEl.appendChild(wrap);
+    };
+
+    for (let vx = minX; vx <= maxX + 1; vx++) {
+        for (let vy = minY; vy <= maxY + 1; vy++) {
+            let qTL = lookup.has(`${vx-1},${vy-1}`);
+            let qTR = lookup.has(`${vx},${vy-1}`);
+            let qBL = lookup.has(`${vx-1},${vy}`);
+            let qBR = lookup.has(`${vx},${vy}`);
+
+            let makeFillets = (facing, signX, signY) => {
+                let ixBase = vx * STEP + signX * 8;
+                let iyBase = vy * STEP + signY * 8;
+                createInnerFillet('base', facing, ixBase, iyBase, 12);
+                
+                let ixBorder = vx * STEP + signX * 14;
+                let iyBorder = vy * STEP + signY * 14;
+                createInnerFillet('border', facing, ixBorder, iyBorder, 6);
+                
+                createInnerFillet('shadow', facing, ixBorder, iyBorder + 8, 6);
+            };
+
+            if (!qTL && qTR && qBL) makeFillets('TL', -1, -1);
+            if (!qTR && qTL && qBR) makeFillets('TR', 1, -1);
+            if (!qBL && qTL && qBR) makeFillets('BL', -1, 1);
+            if (!qBR && qTR && qBL) makeFillets('BR', 1, 1);
+        }
+    }
 }
 
 function renderItems() {
     items.forEach(item => {
         if (!item.element) {
             let el = document.createElement('div');
-            el.className = `item type-${item.type}`;
+            el.className = `item`;
             let x = item.x * STEP + ITEM_OFFSET, y = item.y * STEP + ITEM_OFFSET;
+            
+            let inner = document.createElement('div');
+            inner.className = `item-inner type-${item.type}`;
+            el.appendChild(inner);
 
             item.element = el;
 
             if (item.isNew) {
-                // Pop-in: start at scale(0), then animate to scale(1)
-                // Using synchronous reflow trick instead of rAF to avoid race conditions
-                el.style.transform = `translate(${x}px, ${y}px) scale(0)`;
+                el.style.transform = `translate3d(${x}px, ${y}px, 0) scale(0)`;
                 el.style.opacity = '0';
                 boardItemsEl.appendChild(el);
 
-                void el.offsetWidth; // Force browser to commit initial state
+                void el.offsetWidth;
 
-                el.style.transition = `transform calc(0.3s * var(--anim-speed)) cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity calc(0.3s * var(--anim-speed))`;
-                el.style.transform = `translate(${x}px, ${y}px) scale(1)`;
+                el.style.transition = `transform calc(0.25s * var(--anim-speed)) cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity calc(0.25s * var(--anim-speed))`;
+                el.style.transform = `translate3d(${x}px, ${y}px, 0) scale(1)`;
                 el.style.opacity = '1';
 
                 item._popAnimating = true;
@@ -785,28 +1044,33 @@ function renderItems() {
                     item._popAnimating = false;
                     item._popTimer = null;
                     el.style.transition = '';
-                    el.style.transform = `translate(${x}px, ${y}px)`;
+                    el.style.transform = `translate3d(${x}px, ${y}px, 0)`;
                     el.style.opacity = '';
-                }, 350 * animSpeed);
+                }, 250 * animSpeed);
                 item.isNew = false;
             } else {
-                el.style.transform = `translate(${x}px, ${y}px)`;
+                el.style.transform = `translate3d(${x}px, ${y}px, 0)`;
                 boardItemsEl.appendChild(el);
             }
         }
 
         let el = item.element;
-        el.className = `item type-${item.type}`;
+        let inner = el.querySelector('.item-inner');
+        if (inner) {
+            inner.className = `item-inner type-${item.type}`;
 
-        if (item.type === 'block' || item.type === 'frozen_block') {
-            el.textContent = item.value;
-            let p2 = Math.log2(item.value);
-            el.setAttribute('data-level', p2);
-        } else {
-            el.textContent = "";
+            if (item.type === 'block' || item.type === 'frozen_block') {
+                inner.textContent = item.value;
+                let p2 = Math.log2(item.value);
+                inner.setAttribute('data-level', p2);
+            } else {
+                inner.textContent = "";
+            }
+
+            if (item.type === 'box') {
+                inner.setAttribute('data-hp', item.hp);
+            }
         }
-
-        if (item.type === 'box') el.setAttribute('data-hp', item.hp);
     });
 
     renderPositions();
@@ -816,7 +1080,7 @@ function renderPositions() {
     items.forEach(item => {
         let el = item.element;
         if (!el || item._popAnimating) return;
-        el.style.transform = `translate(${item.x * STEP + ITEM_OFFSET}px, ${item.y * STEP + ITEM_OFFSET}px)`;
+        el.style.transform = `translate3d(${item.x * STEP + ITEM_OFFSET}px, ${item.y * STEP + ITEM_OFFSET}px, 0)`;
     });
 }
 
@@ -828,9 +1092,13 @@ function updateVisualLevels() {
         }
         let el = item.element;
         if (!el) return;
-        if (item.type === 'block' || item.type === 'frozen_block') {
-            el.textContent = item.value;
-            el.setAttribute('data-level', Math.log2(item.value));
+        let inner = el.querySelector('.item-inner');
+        if (inner) {
+            inner.className = `item-inner type-${item.type}`;
+            if (item.type === 'block' || item.type === 'frozen_block') {
+                inner.textContent = item.value;
+                inner.setAttribute('data-level', Math.log2(item.value));
+            }
         }
     });
 }
@@ -849,7 +1117,11 @@ function findMissionUI(type, targetValue) {
     return null;
 }
 
-function flyToUI(el, targetUI, cb) {
+function flyToUI(el, targetUI, cb, delay = 0) {
+    if (delay > 0) {
+        setTimeout(() => flyToUI(el, targetUI, cb, 0), delay);
+        return;
+    }
     let clone = el.cloneNode(true);
     let startRect = el.getBoundingClientRect();
     let endRect = targetUI.getBoundingClientRect();
@@ -886,32 +1158,42 @@ function flyToUI(el, targetUI, cb) {
 function createStoneParticles(el) {
     let rect = el.getBoundingClientRect();
     let container = document.body;
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 16; i++) {
         let p = document.createElement('div');
-        p.textContent = "🪨";
+        // Use a mix of emoji and colored fragments for richness
+        if (Math.random() > 0.5) {
+            p.textContent = "🪨";
+            p.style.fontSize = (10 + Math.random() * 20) + 'px';
+        } else {
+            p.style.width = (8 + Math.random() * 12) + 'px';
+            p.style.height = (8 + Math.random() * 12) + 'px';
+            p.style.background = '#808080';
+            p.style.borderRadius = '2px';
+            p.style.border = '1px solid #555';
+        }
+        
         p.style.position = 'fixed';
-        p.style.left = (rect.left + rect.width / 2 - 10) + 'px';
-        p.style.top = (rect.top + rect.height / 2 - 10) + 'px';
-        p.style.fontSize = '20px';
+        p.style.left = (rect.left + rect.width / 2) + 'px';
+        p.style.top = (rect.top + rect.height / 2) + 'px';
         p.style.pointerEvents = 'none';
         p.style.zIndex = '9999';
-        p.style.transition = `transform calc(0.5s * var(--anim-speed)) ease-out, opacity calc(0.5s * var(--anim-speed)) ease-out`;
         
-        let tx = (Math.random() - 0.5) * 100;
-        let ty = (Math.random() - 0.5) * 100 - 50;
-        let rot = (Math.random() - 0.5) * 360;
+        let tx = (Math.random() - 0.5) * 120; // Reduced from 200
+        let ty = (Math.random() - 1.0) * 100; // Reduced from 150
+        let rot = (Math.random() - 0.5) * 1080;
+        
+        p.style.transition = `transform calc(0.6s * var(--anim-speed)) cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity calc(0.6s * var(--anim-speed)) ease-out`;
         
         container.appendChild(p);
         
         void p.offsetWidth;
         
-        p.style.transform = `translate(${tx}px, ${ty}px) rotate(${rot}deg) scale(0.5)`;
+        p.style.transform = `translate(${tx}px, ${ty}px) rotate(${rot}deg) scale(0)`;
         p.style.opacity = '0';
         
-        setTimeout(() => p.remove(), 500 * animSpeed);
+        setTimeout(() => p.remove(), 600 * animSpeed);
     }
 }
-
 function destroyWithScale(el, item) {
     let x = item.x * STEP + ITEM_OFFSET, y = item.y * STEP + ITEM_OFFSET;
     el.style.transition = `transform calc(0.25s * var(--anim-speed)) ease-in, opacity calc(0.25s * var(--anim-speed)) ease-in`;
@@ -921,12 +1203,34 @@ function destroyWithScale(el, item) {
     setTimeout(() => el.remove(), 300 * animSpeed);
 }
 
+function animateStoneShatter(item) {
+    if (!item.element) return;
+    sfxStoneBreak.currentTime = 0;
+    sfxStoneBreak.play().catch(e => {});
+    createStoneParticles(item.element);
+    
+    // Special jump and scale out animation for stones
+    const inner = item.element.querySelector('.item-inner');
+    if (inner) {
+        inner.style.transition = `transform calc(0.4s * var(--anim-speed)) cubic-bezier(0.34, 1.56, 0.64, 1), opacity calc(0.3s * var(--anim-speed)) ease-in`;
+        inner.style.transform = `translateY(-40px) scale(0) rotate(15deg)`;
+        inner.style.opacity = '0';
+    }
+    setTimeout(() => item.element?.remove(), 400 * animSpeed);
+}
+
 function removeDestroyedDOM() {
     items.forEach(item => {
         if (item.toBeDestroyed && item.element) {
             if (item.flyToMission) {
                 let targetUI = findMissionUI(item.flyToMission, item.missionParams?.value);
                 if (targetUI) {
+                    let delay = (item.type === 'door') ? 400 * animSpeed : 0;
+                    if (item.type === 'stone') {
+                        sfxStoneBreak.currentTime = 0;
+                        sfxStoneBreak.play().catch(e => {});
+                        createStoneParticles(item.element);
+                    }
                     flyToUI(item.element, targetUI, () => {
                         item.element.remove();
                         sfxCollect.currentTime = 0;
@@ -934,17 +1238,22 @@ function removeDestroyedDOM() {
                         targetUI.classList.remove('shake-ui');
                         void targetUI.offsetWidth;
                         targetUI.classList.add('shake-ui');
-                    });
+                    }, delay);
                 } else {
-                    destroyWithScale(item.element, item);
+                    if (item.type === 'stone') {
+                        animateStoneShatter(item);
+                    } else {
+                        destroyWithScale(item.element, item);
+                    }
                 }
             } else if (item.mergeDestroyed) {
                 item.element.remove();
             } else {
-                if (item.destroyedByMerge && item.type === 'stone') {
-                    createStoneParticles(item.element);
+                if (item.type === 'stone') {
+                    animateStoneShatter(item);
+                } else {
+                    destroyWithScale(item.element, item);
                 }
-                destroyWithScale(item.element, item);
             }
         }
     });
@@ -963,7 +1272,7 @@ function updateUI() {
         let icon = '';
         if (m.type === 'collect_block') {
             let p2 = Math.log2(m.target_value);
-            icon = `<div class="mission-icon-container"><div class="item type-block" data-level="${p2}" style="position:relative; width:45px; height:45px; border-radius:8px; font-size:1.3rem; box-shadow: 0 4px 6px rgba(0,0,0,0.3); display:flex; justify-content:center; align-items:center;">${m.target_value}</div></div>`;
+            icon = `<div class="mission-icon-container"><div class="item" style="position:relative; width:45px; height:45px; z-index: 1;"><div class="item-inner type-block" data-level="${p2}" style="width:100%; height:100%; border-radius:8px; font-size:1.3rem; box-shadow: 0 4px 6px rgba(0,0,0,0.3); display:flex; justify-content:center; align-items:center; border: none;">${m.target_value}</div></div></div>`;
         }
         else if (m.type === 'destroy_box') {
             icon = `<div class="mission-icon-container"><div style="width:45px; height:45px; background: url('Art/Box.png') center/cover no-repeat; border-radius:8px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);"></div></div>`;
@@ -979,12 +1288,109 @@ function updateUI() {
         }
         
         let isDone = m.progress >= m.amount;
+        let checkmarkClass = 'mission-checkmark';
+        if (isDone && !m.doneAnimated) {
+            checkmarkClass += ' animate';
+            m.doneAnimated = true;
+        }
+        
         el.innerHTML = `
-            <div class="mission-icon" style="margin-bottom: 5px;">${icon}</div>
-            <div class="mission-progress ${isDone ? 'mission-done' : ''}" style="font-size: 1.4rem;">${m.progress} / ${m.amount}</div>
+            <div class="mission-icon">${icon}</div>
+            <div class="mission-progress ${isDone ? 'mission-done' : ''}">
+                ${isDone ? `<span class="${checkmarkClass}">✅</span>` : m.progress + ' / ' + m.amount}
+            </div>
         `;
         missionsPanelEl.appendChild(el);
     });
+}
+
+function createIceShatterEffect(x, y) {
+    const centerX = x * STEP + STEP / 2;
+    const centerY = y * STEP + STEP / 2;
+
+    for (let i = 0; i < 12; i++) {
+        const shard = document.createElement('div');
+        shard.className = 'ice-shard';
+        
+        // Randomize shard properties for a rich aesthetic
+        const angle = Math.random() * Math.PI * 2;
+        const velocity = 100 + Math.random() * 200;
+        const dx = Math.cos(angle) * velocity;
+        const dy = Math.sin(angle) * velocity;
+        const rot = (Math.random() - 0.5) * 1080;
+        const size = 12 + Math.random() * 18;
+        
+        shard.style.width = `${size}px`;
+        shard.style.height = `${size}px`;
+        shard.style.setProperty('--dx', `${dx}px`);
+        shard.style.setProperty('--dy', `${dy}px`);
+        shard.style.setProperty('--rot', `${rot}deg`);
+        
+        // Initial position (center of the ice cell)
+        shard.style.left = `${centerX - size / 2}px`;
+        shard.style.top = `${centerY - size / 2}px`;
+        
+        boardItemsEl.appendChild(shard);
+        
+        // Remove after animation finishes
+        setTimeout(() => {
+            shard.remove();
+        }, 1000 * animSpeed);
+    }
+}
+
+function createBoxParticles(gx, gy) {
+    const centerX = gx * STEP + STEP / 2;
+    const centerY = gy * STEP + STEP / 2;
+
+    for (let i = 0; i < 8; i++) {
+        const shard = document.createElement('div');
+        shard.className = 'wood-shard';
+        
+        const angle = Math.random() * Math.PI * 2;
+        const velocity = 80 + Math.random() * 150;
+        const dx = Math.cos(angle) * velocity;
+        const dy = Math.sin(angle) * velocity;
+        const rot = (Math.random() - 0.5) * 720;
+        
+        shard.style.setProperty('--dx', `${dx}px`);
+        shard.style.setProperty('--dy', `${dy}px`);
+        shard.style.setProperty('--rot', `${rot}deg`);
+        
+        shard.style.left = `${centerX - 6}px`;
+        shard.style.top = `${centerY - 6}px`;
+        
+        boardItemsEl.appendChild(shard);
+        setTimeout(() => shard.remove(), 700 * animSpeed);
+    }
+}
+function createDoorParticles(gx, gy) {
+    const centerX = gx * STEP + STEP / 2;
+    const centerY = gy * STEP + STEP / 2;
+
+    for (let i = 0; i < 15; i++) {
+        const p = document.createElement('div');
+        p.className = 'door-particle';
+        
+        const angle = Math.random() * Math.PI * 2;
+        const velocity = 60 + Math.random() * 120; // Reduced from 100-350
+        const dx = Math.cos(angle) * velocity;
+        const dy = Math.sin(angle) * velocity;
+        const rot = (Math.random() - 0.5) * 1080;
+        const size = 12 + Math.random() * 18; // Slightly smaller too
+        
+        p.style.width = `${size}px`;
+        p.style.height = `${size}px`;
+        p.style.setProperty('--dx', `${dx}px`);
+        p.style.setProperty('--dy', `${dy}px`);
+        p.style.setProperty('--rot', `${rot}deg`);
+        
+        p.style.left = `${centerX - size / 2}px`;
+        p.style.top = `${centerY - size / 2}px`;
+        
+        boardItemsEl.appendChild(p);
+        setTimeout(() => p.remove(), 800 * animSpeed);
+    }
 }
 
 window.onload = initGame;

@@ -70,16 +70,6 @@
 
         <!-- Bottom Panel (I/O) -->
         <div id="editor-bottom-panel">
-            <div class="io-header-container">
-                <h3>Import / Export JSON</h3>
-                <div class="io-buttons">
-                    <button id="generate-json-btn">Generate and Copy</button>
-                    <button id="load-json-btn">Load JSON</button>
-                </div>
-            </div>
-            <textarea id="json-io" spellcheck="false"></textarea>
-            
-            <hr style="margin: 20px 0; border-color: #333;">
             <!-- Saves Section -->
             <div class="saves-section">
                 <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
@@ -107,6 +97,17 @@
                     </div>
                 </div>
             </div>
+
+            <hr style="margin: 20px 0; border-color: #333;">
+
+            <div class="io-header-container">
+                <h3>Import / Export JSON</h3>
+                <div class="io-buttons">
+                    <button id="generate-json-btn">Generate and Copy</button>
+                    <button id="load-json-btn">Load JSON</button>
+                </div>
+            </div>
+            <textarea id="json-io" spellcheck="false"></textarea>
         </div>
     </div>
     <script type="module" src="editor.js"></script>
