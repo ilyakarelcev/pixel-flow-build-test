@@ -266,7 +266,7 @@ function initGame() {
 
     // Prevent scrolling entirely on game area
     document.addEventListener('touchmove', e => {
-        if (!e.target.closest('#dev-tools')) {
+        if (!e.target.closest('#dev-tools') && !e.target.closest('.community-overlay')) {
             e.preventDefault();
         }
     }, {passive: false});

@@ -19,7 +19,7 @@ const paletteObjects = [
 let appState = {
     gridX: 5,
     gridY: 5,
-    moves_limit: 50,
+    moves_limit: 200,
     missions: [], // { type, target_value(opt), amount }
     board_cells: {}, // key: "x,y", value: "zone_id"
     items: [],

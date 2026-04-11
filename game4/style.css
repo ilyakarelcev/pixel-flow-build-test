@@ -457,9 +457,9 @@ header {
     background: linear-gradient(
         105deg,
         transparent 0%,
-        rgba(200, 230, 255, 0.06) 30%,
-        rgba(255, 255, 255, 0.22) 50%,
-        rgba(200, 230, 255, 0.06) 70%,
+        rgba(200, 230, 255, 0.12) 30%,
+        rgba(255, 255, 255, 0.44) 50%,
+        rgba(200, 230, 255, 0.12) 70%,
         transparent 100%
     );
     background-size: 50% 100%;

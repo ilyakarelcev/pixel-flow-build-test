@@ -246,7 +246,20 @@ input[type=range]::-webkit-slider-runnable-track {
 }
 
 .control-group input {
-    width: 50px;
+    width: 60px;
+    text-align: center;
+    -moz-appearance: textfield;
+}
+
+#moves-limit {
+    width: 70px;
+}
+
+/* Custom number input spinners */
+.control-group input[type="number"]::-webkit-inner-spin-button,
+.control-group input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
 }
 
 .zone-indicator {
