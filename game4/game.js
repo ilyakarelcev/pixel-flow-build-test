@@ -1,3 +1,5 @@
+import { db, auth, provider, onAuthStateChanged, signInWithPopup, collection, doc, setDoc, getDocs, query, orderBy } from './firebase.js';
+
 const initialJSON = {
   "level_id": 1,
   "moves_limit": 50,
@@ -143,6 +145,122 @@ async function loadLevelFile(index) {
     }
 }
 
+// Auth state for likes
+let gameUser = null;
+if (onAuthStateChanged && auth) {
+    onAuthStateChanged(auth, (user) => { gameUser = user; });
+}
+
+async function toggleLike(levelId, heartBtn) {
+    if (!gameUser) {
+        // Not logged in — prompt login
+        try {
+            await signInWithPopup(auth, provider);
+        } catch (err) {
+            if (err.code === 'auth/popup-blocked') {
+                alert("Разрешите всплывающие окна для входа через Google.");
+            }
+            return;
+        }
+        if (!gameUser) return;
+    }
+
+    const levelRef = doc(db, "community_levels", levelId);
+
+    // Re-read current level doc to get fresh likedBy
+    const snap = await getDocs(query(collection(db, "community_levels")));
+    let likedBy = [];
+    snap.forEach(d => { if (d.id === levelId) likedBy = d.data().likedBy || []; });
+
+    const alreadyLiked = likedBy.includes(gameUser.uid);
+
+    if (alreadyLiked) {
+        // Unlike
+        const newLikedBy = likedBy.filter(uid => uid !== gameUser.uid);
+        await setDoc(levelRef, { likedBy: newLikedBy, likes: newLikedBy.length }, { merge: true });
+        heartBtn.classList.remove('liked');
+        heartBtn.querySelector('.like-count').textContent = newLikedBy.length || '';
+    } else {
+        // Like
+        likedBy.push(gameUser.uid);
+        await setDoc(levelRef, { likedBy, likes: likedBy.length }, { merge: true });
+        heartBtn.classList.add('liked');
+        heartBtn.querySelector('.like-count').textContent = likedBy.length;
+        // Pop animation
+        heartBtn.classList.add('like-pop');
+        setTimeout(() => heartBtn.classList.remove('like-pop'), 400);
+    }
+}
+
+async function loadCommunityLevels() {
+    const list = document.getElementById('community-levels-list');
+    if (!list) return;
+    
+    if (!db) {
+        list.innerHTML = '<div class="loading-spinner">Firebase не настроен. Облачные функции недоступны.</div>';
+        return;
+    }
+    list.innerHTML = '<div class="loading-spinner">Загрузка уровней сообщества...</div>';
+
+    try {
+        const q = query(collection(db, "community_levels"), orderBy("timestamp", "desc"));
+        const snap = await getDocs(q);
+        list.innerHTML = '';
+
+        if (snap.empty) {
+            list.innerHTML = '<div class="loading-spinner">Пока нет пользовательских уровней. Стань первым!</div>';
+            return;
+        }
+
+        snap.forEach(docSnap => {
+            const levelId = docSnap.id;
+            const data = docSnap.data();
+            const likedBy = data.likedBy || [];
+            const userLiked = gameUser ? likedBy.includes(gameUser.uid) : false;
+
+            const card = document.createElement('div');
+            card.className = 'pub-level-card';
+            const likeCount = likedBy.length;
+            card.innerHTML = `
+                <div class="pub-level-preview">
+                    <img src="${data.image}" alt="Preview">
+                </div>
+                <div class="pub-level-footer">
+                    <div class="pub-level-info">
+                        <div class="pub-level-name">${data.name || 'Без названия'}</div>
+                        <div class="pub-level-author">
+                            <img class="pub-author-avatar" src="${data.authorAvatar || ''}" onerror="this.style.display='none'">
+                            <span>${data.authorName || 'Аноним'}</span>
+                        </div>
+                    </div>
+                    <button class="like-btn ${userLiked ? 'liked' : ''}" data-level-id="${levelId}">
+                        <span class="like-heart">♥</span>
+                        <span class="like-count">${likeCount || ''}</span>
+                    </button>
+                </div>
+            `;
+
+            // Like button handler (stop propagation so card click doesn't fire)
+            const likeBtn = card.querySelector('.like-btn');
+            likeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                toggleLike(levelId, likeBtn);
+            });
+
+            card.addEventListener('click', () => {
+                const levelData = JSON.parse(data.json);
+                loadLevel(levelData);
+                document.getElementById('community-modal').classList.add('hidden');
+                document.getElementById('level-indicator').textContent = "🌍";
+            });
+            list.appendChild(card);
+        });
+    } catch (err) {
+        console.error("Load community levels error:", err);
+        list.innerHTML = '<div class="loading-spinner">Ошибка загрузки. Попробуйте позже.</div>';
+    }
+}
+
 function initGame() {
     loadLevelFile(currentLevelIndex);
 
@@ -260,6 +378,26 @@ function initGame() {
 
     editorLinkBtn.addEventListener('click', () => {
         window.open('editor.html', '_blank');
+    });
+
+    // Community Levels
+    const communityBtn = document.getElementById('community-levels-btn');
+    const communityModal = document.getElementById('community-modal');
+    const closeCommunityBtn = document.getElementById('close-community-modal');
+
+    communityBtn?.addEventListener('click', () => {
+        communityModal.classList.remove('hidden');
+        loadCommunityLevels();
+    });
+
+    closeCommunityBtn?.addEventListener('click', () => {
+        communityModal.classList.add('hidden');
+    });
+
+    window.addEventListener('click', (e) => {
+        if (e.target === communityModal) {
+            communityModal.classList.add('hidden');
+        }
     });
 
     window.addEventListener('resize', fitBoard);
@@ -1393,4 +1531,5 @@ function createDoorParticles(gx, gy) {
     }
 }
 
-window.onload = initGame;
+// Run
+initGame();

@@ -1,11 +1,7 @@
 {
-  "level_id": 2639,
+  "level_id": 6339,
   "moves_limit": 200,
   "missions": [
-    {
-      "type": "open_door",
-      "amount": 3
-    },
     {
       "type": "destroy_box",
       "amount": 3
@@ -15,102 +11,142 @@
     {
       "x": 0,
       "y": 0,
-      "zone_id": "zone_4"
+      "zone_id": "zone_1"
     },
     {
       "x": 1,
       "y": 0,
-      "zone_id": "zone_4"
+      "zone_id": "zone_1"
     },
     {
       "x": 2,
       "y": 0,
-      "zone_id": "zone_4"
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 3,
+      "y": 0,
+      "zone_id": "zone_1"
     },
     {
       "x": 4,
       "y": 0,
-      "zone_id": "zone_3"
+      "zone_id": "zone_1"
     },
     {
       "x": 5,
       "y": 0,
-      "zone_id": "zone_3"
+      "zone_id": "zone_1"
     },
     {
       "x": 6,
       "y": 0,
-      "zone_id": "zone_3"
+      "zone_id": "zone_1"
     },
     {
       "x": 0,
       "y": 1,
-      "zone_id": "zone_4"
+      "zone_id": "zone_1"
     },
     {
       "x": 1,
       "y": 1,
-      "zone_id": "zone_4"
+      "zone_id": "zone_1"
     },
     {
       "x": 2,
       "y": 1,
-      "zone_id": "zone_4"
+      "zone_id": "zone_1"
     },
     {
       "x": 3,
       "y": 1,
-      "zone_id": "zone_3"
+      "zone_id": "zone_1"
     },
     {
       "x": 4,
       "y": 1,
-      "zone_id": "zone_3"
+      "zone_id": "zone_1"
     },
     {
       "x": 5,
       "y": 1,
-      "zone_id": "zone_3"
+      "zone_id": "zone_1"
     },
     {
       "x": 6,
       "y": 1,
-      "zone_id": "zone_3"
+      "zone_id": "zone_1"
     },
     {
       "x": 0,
       "y": 2,
-      "zone_id": "zone_4"
+      "zone_id": "zone_1"
     },
     {
       "x": 1,
       "y": 2,
-      "zone_id": "zone_4"
+      "zone_id": "zone_1"
     },
     {
       "x": 2,
       "y": 2,
-      "zone_id": "zone_4"
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 3,
+      "y": 2,
+      "zone_id": "zone_1"
     },
     {
       "x": 4,
       "y": 2,
-      "zone_id": "zone_3"
+      "zone_id": "zone_1"
     },
     {
       "x": 5,
       "y": 2,
-      "zone_id": "zone_3"
+      "zone_id": "zone_1"
     },
     {
       "x": 6,
       "y": 2,
-      "zone_id": "zone_3"
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 0,
+      "y": 3,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 2,
+      "y": 3,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 3,
+      "y": 3,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 4,
+      "y": 3,
+      "zone_id": "zone_1"
     },
     {
       "x": 5,
       "y": 3,
-      "zone_id": "zone_2"
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 6,
+      "y": 3,
+      "zone_id": "zone_1"
     },
     {
       "x": 0,
@@ -133,14 +169,19 @@
       "zone_id": "zone_1"
     },
     {
+      "x": 4,
+      "y": 4,
+      "zone_id": "zone_1"
+    },
+    {
       "x": 5,
       "y": 4,
-      "zone_id": "zone_2"
+      "zone_id": "zone_1"
     },
     {
       "x": 6,
       "y": 4,
-      "zone_id": "zone_2"
+      "zone_id": "zone_1"
     },
     {
       "x": 0,
@@ -170,12 +211,12 @@
     {
       "x": 5,
       "y": 5,
-      "zone_id": "zone_2"
+      "zone_id": "zone_1"
     },
     {
       "x": 6,
       "y": 5,
-      "zone_id": "zone_2"
+      "zone_id": "zone_1"
     },
     {
       "x": 0,
@@ -198,79 +239,89 @@
       "zone_id": "zone_1"
     },
     {
+      "x": 4,
+      "y": 6,
+      "zone_id": "zone_1"
+    },
+    {
       "x": 5,
       "y": 6,
-      "zone_id": "zone_2"
+      "zone_id": "zone_1"
     },
     {
       "x": 6,
       "y": 6,
-      "zone_id": "zone_2"
+      "zone_id": "zone_1"
     }
   ],
   "items": [
     {
-      "type": "door",
+      "type": "wall",
+      "x": 6,
+      "y": 0
+    },
+    {
+      "type": "wall",
+      "x": 6,
+      "y": 1
+    },
+    {
+      "type": "wall",
+      "x": 6,
+      "y": 2
+    },
+    {
+      "type": "wall",
       "x": 4,
-      "y": 5,
-      "activates_zone": "zone_2"
-    },
-    {
-      "type": "door",
-      "x": 5,
-      "y": 3,
-      "activates_zone": "zone_3"
-    },
-    {
-      "type": "door",
-      "x": 3,
-      "y": 1,
-      "activates_zone": "zone_4"
-    },
-    {
-      "type": "key",
-      "x": 1,
-      "y": 6
-    },
-    {
-      "type": "block",
-      "value": 4,
-      "x": 0,
-      "y": 5
-    },
-    {
-      "type": "block",
-      "value": 8,
-      "x": 0,
-      "y": 4
-    },
-    {
-      "type": "key",
-      "x": 1,
-      "y": 5
-    },
-    {
-      "type": "key",
-      "x": 1,
-      "y": 4
+      "y": 2
     },
     {
       "type": "box",
       "hp": 1,
-      "x": 0,
+      "x": 5,
+      "y": 2
+    },
+    {
+      "type": "box",
+      "hp": 1,
+      "x": 5,
       "y": 0
     },
     {
       "type": "box",
       "hp": 1,
-      "x": 0,
+      "x": 5,
       "y": 1
     },
     {
-      "type": "box",
-      "hp": 1,
-      "x": 0,
-      "y": 2
+      "type": "wall",
+      "x": 4,
+      "y": 1
+    },
+    {
+      "type": "wall",
+      "x": 4,
+      "y": 0
+    },
+    {
+      "type": "wall",
+      "x": 6,
+      "y": 3
+    },
+    {
+      "type": "stone",
+      "x": 6,
+      "y": 4
+    },
+    {
+      "type": "stone",
+      "x": 6,
+      "y": 5
+    },
+    {
+      "type": "stone",
+      "x": 6,
+      "y": 6
     },
     {
       "type": "block",
@@ -289,16 +340,6 @@
       "id": "zone_2",
       "active": false,
       "base_value": 8
-    },
-    {
-      "id": "zone_3",
-      "active": false,
-      "base_value": 2
-    },
-    {
-      "id": "zone_4",
-      "active": false,
-      "base_value": 2
     }
   ]
 }

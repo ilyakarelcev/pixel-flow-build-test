@@ -14,25 +14,34 @@
     <div id="editor-layout">
         <!-- Top Panel (Header) -->
         <header id="editor-header">
-            <div class="logo">Level<span>Editor</span></div>
+            <div class="logo">Beyond<span>Editor</span></div>
+            
             <div class="header-controls">
                 <div class="control-group">
-                    <label>Grid X:</label>
+                    <label>Сетка X:</label>
                     <input type="number" id="grid-x" min="2" max="18" value="4">
                 </div>
                 <div class="control-group">
-                    <label>Grid Y:</label>
+                    <label>Сетка Y:</label>
                     <input type="number" id="grid-y" min="2" max="18" value="4">
                 </div>
                 <div class="control-group">
-                    <label>Moves Limit:</label>
+                    <label>Ходы:</label>
                     <input type="number" id="moves-limit" min="1" value="50">
                 </div>
             </div>
+
             <div id="missions-container">
-                <h4>Missions</h4>
+                <h4>Миссии</h4>
                 <div id="missions-list"></div>
-                <button id="add-mission-btn">+ Add Mission</button>
+                <div id="missions-drop-zone" class="mission-drop-target">
+                    <span>Сюда для миссии 🎯</span>
+                </div>
+                <button id="add-mission-btn" style="display: none;">+ Добавить</button>
+            </div>
+            <div class="header-buttons">
+                <button id="btn-info" title="Помощь">Инфо 💡</button>
+                <button id="btn-publish" title="Опубликовать уровень" style="display: none;">Опубликовать 🚀</button>
             </div>
         </header>
 
@@ -40,13 +49,13 @@
             <!-- Left Panel (Palettes) -->
             <div id="editor-left-panel">
                 <div class="palette-section">
-                    <h3>Zones (Paint)</h3>
+                    <h3>Зоны (Кисть)</h3>
                     <div id="zones-palette"></div>
-                    <button id="add-zone-btn">+ Add Zone</button>
+                    <button id="add-zone-btn">+ Новая Зона</button>
                 </div>
 
                 <div class="palette-section">
-                    <h3>Objects (Drag & Drop)</h3>
+                    <h3>Объекты (Drag & Drop)</h3>
                     <div id="objects-palette"></div>
                 </div>
             </div>
@@ -61,9 +70,9 @@
 
             <!-- Right Panel (Properties Inspector) -->
             <div id="editor-right-panel">
-                <h3>Properties</h3>
+                <h3>Свойства</h3>
                 <div id="properties-inspector">
-                    <p class="placeholder">Select an object or zone</p>
+                    <p class="placeholder">Выберите объект или зону</p>
                 </div>
             </div>
         </div>
@@ -74,26 +83,26 @@
             <div class="saves-section">
                 <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                     <div style="display: flex; align-items: center; gap: 15px;">
-                        <h2 style="margin: 0;">Cloud Projects</h2>
-                        <button id="btn-copy-current" title="Copy Current Level JSON" style="padding: 5px 10px; font-size: 11px; background: #444; color: #ccc; border: 1px solid #555; border-radius: 4px; cursor: pointer;">📋 Copy Current</button>
+                        <h2 style="margin: 0;">Облачные Сохранения</h2>
+                        <button id="btn-copy-current" title="Скопировать JSON уровня" style="padding: 5px 10px; font-size: 11px; background: #444; color: #ccc; border: 1px solid #555; border-radius: 4px; cursor: pointer;">📋 Копировать текущий</button>
                     </div>
-                    <div class="hint" id="login-hint" style="color: #888;">Log in to view cloud saves.</div>
+                    <div class="hint" id="login-hint" style="color: #888;">Войдите, чтобы видеть сохранения.</div>
                 </div>
-                <div class="saves-carousel" id="saves-carousel" style="display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 15px;">
+                <div class="saves-carousel" id="saves-carousel">
                     <!-- Create New Card -->
-                    <div class="save-card create-new" id="btn-save-project" style="min-width: 120px; height: 120px; background: #222; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; border-radius: 8px; border: 1px dashed #444;">
-                        <span style="font-size: 24px; color: #4CAF50;">+</span>
-                        <h3 style="margin: 5px 0 0; font-size: 14px; text-align: center;">Save<br>Project</h3>
+                    <div class="save-card create-new" id="btn-save-project">
+                        <span class="plus-icon">+</span>
+                        <h3 class="card-title">Сохранить<br>Проект</h3>
                     </div>
                 </div>
 
                 <!-- Auth Section -->
                 <div class="auth-section-bottom" style="display: flex; align-items: center; gap: 10px;">
-                    <button id="btn-login" style="padding: 10px 15px; background: #4285F4; color: white; border: none; border-radius: 5px; cursor: pointer;">Login with Google</button>
+                    <button id="btn-login" style="padding: 10px 15px; background: #4285F4; color: white; border: none; border-radius: 5px; cursor: pointer;">Войти через Google</button>
                     <div id="user-info" style="display: none; align-items: center; gap: 10px;">
                         <img id="user-avatar" src="" alt="Avatar" style="width: 32px; height: 32px; border-radius: 50%;">
-                        <span id="user-name" style="font-size: 0.9rem; font-weight: bold; color: white;">User</span>
-                        <button id="btn-logout" style="padding: 5px 10px; background: transparent; color: #ff4a4a; border: 1px solid #ff4a4a; border-radius: 5px; cursor: pointer;">Logout</button>
+                        <span id="user-name" style="font-size: 0.9rem; font-weight: bold; color: white;">Пользователь</span>
+                        <button id="btn-logout" style="padding: 5px 10px; background: transparent; color: #ff4a4a; border: 1px solid #ff4a4a; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;" title="Выйти">✕</button>
                     </div>
                 </div>
             </div>
@@ -101,15 +110,48 @@
             <hr style="margin: 20px 0; border-color: #333;">
 
             <div class="io-header-container">
-                <h3>Import / Export JSON</h3>
+                <h3>Импорт / Экспорт JSON</h3>
                 <div class="io-buttons">
-                    <button id="generate-json-btn">Generate and Copy</button>
-                    <button id="load-json-btn">Load JSON</button>
+                    <button id="generate-json-btn">Создать и Скопировать</button>
+                    <button id="load-json-btn">Загрузить JSON</button>
                 </div>
             </div>
             <textarea id="json-io" spellcheck="false"></textarea>
         </div>
     </div>
+    <!-- Info Modal -->
+    <div id="info-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Инструкция Редактора</h2>
+                <button id="close-info-modal" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <section>
+                    <h3>🎨 Зоны (Рисование)</h3>
+                    <p>Выберите <b>Зону</b> в левой панели и ведите по полю левой кнопкой мыши. <b style="color: #e74c3c">Правая кнопка мыши</b> — ластик (стирает зоны).</p>
+                    <p><b>Свойства:</b> У каждой зоны свой ID (zone_1, zone_2) и базовый номинал спавна.</p>
+                </section>
+                <section>
+                    <h3>📦 Объекты (Drag & Drop)</h3>
+                    <p>Просто перетащите объект из палитры на поле. Чтобы <b style="color: #3498db">скопировать</b> уже установленный объект, перетаскивайте его с зажатой клавишей <b>Alt</b>.</p>
+                </section>
+                <section>
+                    <h3>🎯 Миссии (Цели уровня)</h3>
+                    <p><b>Важно:</b> Чтобы добавить миссию, зажмите объект в палитре и <b style="color: #f1c40f">перетащите его в блок «Миссии»</b> наверху. Он автоматически превратится в цель (например, «Собрать блоки» или «Разбить ящики»).</p>
+                </section>
+                <section>
+                    <h3>⚡ Активации</h3>
+                    <p>Вы можете сделать так, чтобы разрушение объекта включало новую зону спавна. Выберите объект на поле и в панели <b>Свойства</b> выберите ID зоны для активации.</p>
+                </section>
+                <section>
+                    <h3>🚀 Публикация</h3>
+                    <p>Сохраните проект в облако, а затем нажмите <b>Опубликовать</b>, чтобы ваш уровень появился в общем списке в основной игре!</p>
+                </section>
+            </div>
+        </div>
+    </div>
+
     <script type="module" src="editor.js"></script>
 </body>
 </html>

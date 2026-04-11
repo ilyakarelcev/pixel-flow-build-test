@@ -1,14 +1,11 @@
 {
-  "level_id": 1395,
-  "moves_limit": 200,
+  "level_id": 7096,
+  "moves_limit": 500,
   "missions": [
     {
-      "type": "collect_letter",
-      "amount": 8
-    },
-    {
-      "type": "destroy_box",
-      "amount": 6
+      "type": "collect_block",
+      "amount": 1,
+      "target_value": 512
     }
   ],
   "board_cells": [
@@ -28,42 +25,17 @@
       "zone_id": "zone_1"
     },
     {
-      "x": 3,
-      "y": 0,
-      "zone_id": "zone_1"
-    },
-    {
-      "x": 4,
-      "y": 0,
-      "zone_id": "zone_1"
-    },
-    {
-      "x": 5,
-      "y": 0,
-      "zone_id": "zone_1"
-    },
-    {
       "x": 0,
       "y": 1,
       "zone_id": "zone_1"
     },
     {
+      "x": 1,
+      "y": 1,
+      "zone_id": "zone_1"
+    },
+    {
       "x": 2,
-      "y": 1,
-      "zone_id": "zone_1"
-    },
-    {
-      "x": 3,
-      "y": 1,
-      "zone_id": "zone_1"
-    },
-    {
-      "x": 4,
-      "y": 1,
-      "zone_id": "zone_1"
-    },
-    {
-      "x": 5,
       "y": 1,
       "zone_id": "zone_1"
     },
@@ -73,6 +45,11 @@
       "zone_id": "zone_1"
     },
     {
+      "x": 1,
+      "y": 2,
+      "zone_id": "zone_1"
+    },
+    {
       "x": 2,
       "y": 2,
       "zone_id": "zone_1"
@@ -93,6 +70,26 @@
       "zone_id": "zone_1"
     },
     {
+      "x": 6,
+      "y": 2,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 7,
+      "y": 2,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 8,
+      "y": 2,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "zone_id": "zone_1"
+    },
+    {
       "x": 2,
       "y": 3,
       "zone_id": "zone_1"
@@ -109,6 +106,21 @@
     },
     {
       "x": 5,
+      "y": 3,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 6,
+      "y": 3,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 7,
+      "y": 3,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 8,
       "y": 3,
       "zone_id": "zone_1"
     },
@@ -143,6 +155,21 @@
       "zone_id": "zone_1"
     },
     {
+      "x": 6,
+      "y": 4,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 7,
+      "y": 4,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 8,
+      "y": 4,
+      "zone_id": "zone_1"
+    },
+    {
       "x": 0,
       "y": 5,
       "zone_id": "zone_1"
@@ -158,118 +185,63 @@
       "zone_id": "zone_1"
     },
     {
-      "x": 3,
-      "y": 5,
+      "x": 0,
+      "y": 6,
       "zone_id": "zone_1"
     },
     {
-      "x": 4,
-      "y": 5,
+      "x": 1,
+      "y": 6,
       "zone_id": "zone_1"
     },
     {
-      "x": 5,
-      "y": 5,
+      "x": 2,
+      "y": 6,
       "zone_id": "zone_1"
     }
   ],
   "items": [
     {
-      "type": "mailbox",
-      "x": 5,
-      "y": 0
-    },
-    {
-      "type": "letter",
-      "x": 0,
+      "type": "frozen_block",
+      "value": 16,
+      "x": 8,
       "y": 4
     },
     {
-      "type": "letter",
-      "x": 0,
-      "y": 5
+      "type": "frozen_block",
+      "value": 16,
+      "x": 7,
+      "y": 3
     },
     {
-      "type": "box",
-      "hp": 3,
-      "x": 3,
+      "type": "frozen_block",
+      "value": 16,
+      "x": 7,
       "y": 4
-    },
-    {
-      "type": "letter",
-      "x": 5,
-      "y": 5
-    },
-    {
-      "type": "letter",
-      "x": 4,
-      "y": 5
-    },
-    {
-      "type": "letter",
-      "x": 3,
-      "y": 5
-    },
-    {
-      "type": "box",
-      "hp": 3,
-      "x": 4,
-      "y": 4
-    },
-    {
-      "type": "box",
-      "hp": 3,
-      "x": 5,
-      "y": 4
-    },
-    {
-      "type": "box",
-      "hp": 3,
-      "x": 2,
-      "y": 4
-    },
-    {
-      "type": "box",
-      "hp": 3,
-      "x": 1,
-      "y": 4
-    },
-    {
-      "type": "box",
-      "hp": 3,
-      "x": 1,
-      "y": 5
-    },
-    {
-      "type": "letter",
-      "x": 0,
-      "y": 2
-    },
-    {
-      "type": "letter",
-      "x": 0,
-      "y": 0
-    },
-    {
-      "type": "letter",
-      "x": 0,
-      "y": 1
-    },
-    {
-      "type": "door",
-      "x": 1,
-      "y": 0
-    },
-    {
-      "type": "key",
-      "x": 2,
-      "y": 5
     },
     {
       "type": "block",
       "value": 2,
-      "x": 5,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "type": "frozen_block",
+      "value": 16,
+      "x": 8,
+      "y": 2
+    },
+    {
+      "type": "frozen_block",
+      "value": 16,
+      "x": 8,
       "y": 3
+    },
+    {
+      "type": "frozen_block",
+      "value": 16,
+      "x": 7,
+      "y": 2
     }
   ],
   "spawn_zones": [

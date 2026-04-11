@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup as fbSignIn, signOut as fbSignOut } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
-import { getFirestore, collection as fbCol, doc as fbDoc, setDoc as fbSetDoc, getDocs as fbGetDocs, deleteDoc as fbDelDoc, query as fbQuery, orderBy as fbOrderBy } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+import { getAuth, GoogleAuthProvider, onAuthStateChanged as fbOnAuth, signInWithPopup as fbSignIn, signOut as fbSignOut } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
+import { getFirestore, collection as fbCol, doc as fbDoc, setDoc as fbSetDoc, getDocs as fbGetDocs, deleteDoc as fbDelDoc, query as fbQuery, orderBy as fbOrderBy, where as fbWhere } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
 
 // TODO: Replace this with your actual Firebase config! 
 // Go to Firebase Console -> Project Settings -> General -> Web Apps
@@ -15,7 +15,7 @@ const firebaseConfig = {
 };
 
 let app, auth, provider, db;
-let signInWithPopup, signOut, collection, doc, setDoc, getDocs, deleteDoc, query, orderBy;
+let onAuthStateChanged, signInWithPopup, signOut, collection, doc, setDoc, getDocs, deleteDoc, query, orderBy, where;
 
 try {
     if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
@@ -24,6 +24,7 @@ try {
         provider = new GoogleAuthProvider();
         db = getFirestore(app);
 
+        onAuthStateChanged = fbOnAuth;
         signInWithPopup = fbSignIn;
         signOut = fbSignOut;
         collection = fbCol;
@@ -33,13 +34,15 @@ try {
         deleteDoc = fbDelDoc;
         query = fbQuery;
         orderBy = fbOrderBy;
+        where = fbWhere;
     } else {
         throw new Error("Firebase config missing");
     }
 } catch (error) {
     console.warn("⚠️ Firebase is not configured! Cloud saving and authentication will be disabled.", error.message);
 
-    auth = { onAuthStateChanged: (cb) => { cb(null); } };
+    onAuthStateChanged = (auth, cb) => { cb(null); };
+    auth = null;
     provider = null;
     db = null;
 
@@ -52,6 +55,7 @@ try {
     deleteDoc = async () => { };
     query = () => { };
     orderBy = () => { };
+    where = () => { };
 }
 
-export { auth, provider, db, signInWithPopup, signOut, collection, doc, setDoc, getDocs, deleteDoc, query, orderBy };
+export { auth, provider, db, onAuthStateChanged, signInWithPopup, signOut, collection, doc, setDoc, getDocs, deleteDoc, query, orderBy, where };

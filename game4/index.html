@@ -23,6 +23,7 @@
 
         <div id="game-center">
             <header>
+                <button id="community-levels-btn" title="Уровни других пользователей">🌍</button>
                 <div class="logo">Beyond<span>2048</span></div>
                 <div class="header-actions">
                     <button id="restart-level-btn" title="Начать заново">↻</button>
@@ -77,6 +78,20 @@
         </div>
     </div>
 
-    <script src="game.js"></script>
+    <!-- Community Levels Modal -->
+    <div id="community-modal" class="community-overlay hidden">
+        <div class="community-content">
+            <div class="community-header">
+                <h2>Уровни Сообщества</h2>
+                <button id="close-community-modal" class="comm-close-btn">&times;</button>
+            </div>
+            <div class="community-body" id="community-levels-list">
+                <!-- Levels will be loaded here -->
+                <div class="loading-spinner">Загрузка...</div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="game.js"></script>
 </body>
 </html>

@@ -1,10 +1,11 @@
 {
-  "level_id": 959,
-  "moves_limit": 200,
+  "level_id": 4647,
+  "moves_limit": 50,
   "missions": [
     {
-      "type": "collect_letter",
-      "amount": 1
+      "type": "collect_block",
+      "amount": 1,
+      "target_value": 32
     }
   ],
   "board_cells": [
@@ -24,22 +25,7 @@
       "zone_id": "zone_2"
     },
     {
-      "x": 3,
-      "y": 0,
-      "zone_id": "zone_2"
-    },
-    {
-      "x": 4,
-      "y": 0,
-      "zone_id": "zone_2"
-    },
-    {
       "x": 0,
-      "y": 1,
-      "zone_id": "zone_2"
-    },
-    {
-      "x": 1,
       "y": 1,
       "zone_id": "zone_2"
     },
@@ -56,6 +42,11 @@
     {
       "x": 4,
       "y": 1,
+      "zone_id": "zone_2"
+    },
+    {
+      "x": 0,
+      "y": 2,
       "zone_id": "zone_2"
     },
     {
@@ -64,93 +55,65 @@
       "zone_id": "zone_2"
     },
     {
-      "x": 2,
+      "x": 3,
+      "y": 2,
+      "zone_id": "zone_2"
+    },
+    {
+      "x": 4,
+      "y": 2,
+      "zone_id": "zone_2"
+    },
+    {
+      "x": 0,
+      "y": 3,
+      "zone_id": "zone_2"
+    },
+    {
+      "x": 4,
       "y": 3,
       "zone_id": "zone_2"
     },
     {
       "x": 0,
       "y": 4,
-      "zone_id": "zone_1"
-    },
-    {
-      "x": 1,
-      "y": 4,
-      "zone_id": "zone_1"
-    },
-    {
-      "x": 2,
-      "y": 4,
-      "zone_id": "zone_1"
-    },
-    {
-      "x": 3,
-      "y": 4,
-      "zone_id": "zone_1"
-    },
-    {
-      "x": 4,
-      "y": 4,
-      "zone_id": "zone_1"
-    },
-    {
-      "x": 0,
-      "y": 5,
-      "zone_id": "zone_1"
-    },
-    {
-      "x": 1,
-      "y": 5,
-      "zone_id": "zone_1"
-    },
-    {
-      "x": 2,
-      "y": 5,
-      "zone_id": "zone_1"
-    },
-    {
-      "x": 3,
-      "y": 5,
-      "zone_id": "zone_1"
-    },
-    {
-      "x": 4,
-      "y": 5,
-      "zone_id": "zone_1"
+      "zone_id": "zone_2"
     }
   ],
   "items": [
     {
-      "type": "block",
-      "value": 2,
-      "x": 2,
-      "y": 5
+      "type": "key",
+      "x": 0,
+      "y": 3
     },
     {
-      "type": "key",
+      "type": "door",
+      "x": 4,
+      "y": 2
+    },
+    {
+      "type": "frozen_block",
+      "value": 8,
+      "x": 4,
+      "y": 1
+    },
+    {
+      "type": "block",
+      "value": 8,
+      "x": 4,
+      "y": 3
+    },
+    {
+      "type": "frozen_block",
+      "value": 16,
       "x": 0,
       "y": 4
     },
     {
-      "type": "mailbox",
-      "x": 4,
-      "y": 5
-    },
-    {
-      "type": "letter",
-      "x": 3,
-      "y": 0
-    },
-    {
-      "type": "door",
-      "x": 2,
-      "y": 2,
-      "activates_zone": "zone_2"
-    },
-    {
       "type": "stone",
-      "x": 2,
-      "y": 3
+      "activates_zone": "zone_1",
+      "x": 3,
+      "y": 1
     }
   ],
   "spawn_zones": [
