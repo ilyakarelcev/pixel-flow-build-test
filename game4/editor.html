@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Level Editor - Swipe & Merge</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="editor.css">
+</head>
+<body>
+    <div id="editor-layout">
+        <!-- Top Panel (Header) -->
+        <header id="editor-header">
+            <div class="logo">Level<span>Editor</span></div>
+            <div class="header-controls">
+                <div class="control-group">
+                    <label>Grid X:</label>
+                    <input type="number" id="grid-x" min="2" max="18" value="4">
+                </div>
+                <div class="control-group">
+                    <label>Grid Y:</label>
+                    <input type="number" id="grid-y" min="2" max="18" value="4">
+                </div>
+                <div class="control-group">
+                    <label>Moves Limit:</label>
+                    <input type="number" id="moves-limit" min="1" value="50">
+                </div>
+            </div>
+            <div id="missions-container">
+                <h4>Missions</h4>
+                <div id="missions-list"></div>
+                <button id="add-mission-btn">+ Add Mission</button>
+            </div>
+        </header>
+
+        <div id="editor-main">
+            <!-- Left Panel (Palettes) -->
+            <div id="editor-left-panel">
+                <div class="palette-section">
+                    <h3>Zones (Paint)</h3>
+                    <div id="zones-palette"></div>
+                    <button id="add-zone-btn">+ Add Zone</button>
+                </div>
+
+                <div class="palette-section">
+                    <h3>Objects (Drag & Drop)</h3>
+                    <div id="objects-palette"></div>
+                </div>
+            </div>
+
+            <!-- Central Canvas -->
+            <div id="editor-canvas-container">
+                <div id="board-container">
+                    <div id="board-background"></div>
+                    <div id="board-items"></div>
+                </div>
+            </div>
+
+            <!-- Right Panel (Properties Inspector) -->
+            <div id="editor-right-panel">
+                <h3>Properties</h3>
+                <div id="properties-inspector">
+                    <p class="placeholder">Select an object or zone</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Panel (I/O) -->
+        <div id="editor-bottom-panel">
+            <div class="io-header-container">
+                <h3>Import / Export JSON</h3>
+                <div class="io-buttons">
+                    <button id="generate-json-btn">Generate and Copy</button>
+                    <button id="load-json-btn">Load JSON</button>
+                </div>
+            </div>
+            <textarea id="json-io" spellcheck="false"></textarea>
+            
+            <hr style="margin: 20px 0; border-color: #333;">
+            <!-- Saves Section -->
+            <div class="saves-section">
+                <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <h2 style="margin: 0;">Cloud Projects</h2>
+                        <button id="btn-copy-current" title="Copy Current Level JSON" style="padding: 5px 10px; font-size: 11px; background: #444; color: #ccc; border: 1px solid #555; border-radius: 4px; cursor: pointer;">📋 Copy Current</button>
+                    </div>
+                    <div class="hint" id="login-hint" style="color: #888;">Log in to view cloud saves.</div>
+                </div>
+                <div class="saves-carousel" id="saves-carousel" style="display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 15px;">
+                    <!-- Create New Card -->
+                    <div class="save-card create-new" id="btn-save-project" style="min-width: 120px; height: 120px; background: #222; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; border-radius: 8px; border: 1px dashed #444;">
+                        <span style="font-size: 24px; color: #4CAF50;">+</span>
+                        <h3 style="margin: 5px 0 0; font-size: 14px; text-align: center;">Save<br>Project</h3>
+                    </div>
+                </div>
+
+                <!-- Auth Section -->
+                <div class="auth-section-bottom" style="display: flex; align-items: center; gap: 10px;">
+                    <button id="btn-login" style="padding: 10px 15px; background: #4285F4; color: white; border: none; border-radius: 5px; cursor: pointer;">Login with Google</button>
+                    <div id="user-info" style="display: none; align-items: center; gap: 10px;">
+                        <img id="user-avatar" src="" alt="Avatar" style="width: 32px; height: 32px; border-radius: 50%;">
+                        <span id="user-name" style="font-size: 0.9rem; font-weight: bold; color: white;">User</span>
+                        <button id="btn-logout" style="padding: 5px 10px; background: transparent; color: #ff4a4a; border: 1px solid #ff4a4a; border-radius: 5px; cursor: pointer;">Logout</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script type="module" src="editor.js"></script>
+</body>
+</html>

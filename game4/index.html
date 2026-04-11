@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Swipe & Merge Puzzle</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="layout-wrapper">
+        <div id="left-sidebar">
+            <div id="dev-tools">
+                <h3 style="margin-bottom: 0px;">Редактор Уровней</h3>
+                <p style="font-size: 0.8rem; opacity: 0.7; margin-bottom: 5px;">Вставьте JSON уровня сюда</p>
+                <textarea id="level-json-input"></textarea>
+                <button id="load-json-btn">Загрузить JSON</button>
+                <button id="reset-progress-btn" style="margin-top: 20px; background: #e84118;">Сбросить прогресс</button>
+            </div>
+        </div>
+
+        <div id="game-center">
+            <header>
+                <div class="logo">Swipe<span>Merge</span></div>
+                <button id="restart-level-btn" title="Начать заново">🔄</button>
+            </header>
+
+            <div id="top-panel-container" style="display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 0px; margin-bottom: 20px; width: 100%;">
+                <div id="level-container" style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 4px 20px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.2); color: white; display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 0.7rem; font-weight: 900; opacity: 0.8; letter-spacing: 1px;">УРОВЕНЬ</span>
+                    <span id="level-indicator" style="font-size: 1.4rem; font-weight: 900;">1</span>
+                </div>
+
+                <div id="hud-row" style="display: flex; gap: 15px; align-items: stretch; justify-content: center; width: 100%; max-width: 600px;">
+                    <div id="moves-container">
+                        <span id="moves-title">ХОДЫ</span>
+                        <span id="moves-count">50</span>
+                    </div>
+                    <div id="missions-panel" style="flex: 1;"></div>
+                </div>
+            </div>
+
+            <div id="board-scaler">
+                <div id="board-container">
+                    <div id="board-background"></div>
+                    <div id="board-items"></div>
+                    
+                    <div id="game-over-overlay" class="hidden">
+                        <h2 id="game-over-title">МОЛОДЕЦ!</h2>
+                        <div style="display:flex; gap:10px; margin-top: 20px;">
+                            <button id="retry-btn">Рестарт</button>
+                            <button id="next-level-btn" style="display:none;">Далее</button>
+                        </div>
+                    </div>
+
+                    <!-- Stone Tutorial Pop-up -->
+                    <div id="tutorial-overlay" class="hidden">
+                        <div class="tutorial-card">
+                            <div class="tutorial-icon">🪨</div>
+                            <h2>Новый объект: КАМЕНЬ</h2>
+                            <p>Для того, чтобы уничтожить камень, нужно объединить рядом с ним блоки.</p>
+                            <button id="tutorial-ok-btn">ПОНЯТНО</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <button id="skip-level-btn" title="Пропустить уровень">⏭️</button>
+    <button id="editor-link-btn" title="Редактор Уровней">🛠️</button>
+    <script src="game.js"></script>
+</body>
+</html>

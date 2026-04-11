@@ -1,0 +1,176 @@
+{
+  "level_id": 5772,
+  "moves_limit": 200,
+  "missions": [
+    {
+      "type": "destroy_box",
+      "amount": 4
+    }
+  ],
+  "board_cells": [
+    {
+      "x": 0,
+      "y": 0,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 3,
+      "y": 0,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 4,
+      "y": 0,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 5,
+      "y": 0,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 6,
+      "y": 0,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 7,
+      "y": 0,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 3,
+      "y": 1,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 4,
+      "y": 1,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 5,
+      "y": 1,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 6,
+      "y": 1,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 7,
+      "y": 1,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 0,
+      "y": 2,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 1,
+      "y": 2,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 2,
+      "y": 2,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 3,
+      "y": 2,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 4,
+      "y": 2,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 5,
+      "y": 2,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 6,
+      "y": 2,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 7,
+      "y": 2,
+      "zone_id": "zone_1"
+    }
+  ],
+  "items": [
+    {
+      "type": "box",
+      "hp": 1,
+      "x": 3,
+      "y": 0
+    },
+    {
+      "type": "box",
+      "hp": 1,
+      "x": 3,
+      "y": 1
+    },
+    {
+      "type": "box",
+      "hp": 1,
+      "x": 4,
+      "y": 0
+    },
+    {
+      "type": "box",
+      "hp": 1,
+      "x": 4,
+      "y": 1
+    },
+    {
+      "type": "block",
+      "value": 2,
+      "x": 0,
+      "y": 2
+    }
+  ],
+  "spawn_zones": [
+    {
+      "id": "zone_1",
+      "active": true,
+      "base_value": 2
+    },
+    {
+      "id": "zone_2",
+      "active": false,
+      "base_value": 8
+    }
+  ]
+}

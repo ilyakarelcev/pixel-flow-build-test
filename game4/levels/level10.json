@@ -1,0 +1,240 @@
+{
+  "level_id": 3949,
+  "moves_limit": 120,
+  "missions": [
+    {
+      "type": "destroy_stone",
+      "amount": 6
+    },
+    {
+      "type": "destroy_box",
+      "amount": 3
+    }
+  ],
+  "board_cells": [
+    {
+      "x": 4,
+      "y": 0,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 5,
+      "y": 0,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 3,
+      "y": 1,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 4,
+      "y": 1,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 5,
+      "y": 1,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 0,
+      "y": 2,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 1,
+      "y": 2,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 4,
+      "y": 2,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 5,
+      "y": 2,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 0,
+      "y": 3,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 4,
+      "y": 3,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 5,
+      "y": 3,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 0,
+      "y": 4,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 1,
+      "y": 4,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 4,
+      "y": 4,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 5,
+      "y": 4,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 0,
+      "y": 5,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 1,
+      "y": 5,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 2,
+      "y": 5,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 3,
+      "y": 5,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 4,
+      "y": 5,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 5,
+      "y": 5,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 2,
+      "y": 6,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 3,
+      "y": 6,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 4,
+      "y": 6,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 5,
+      "y": 6,
+      "zone_id": "zone_1"
+    }
+  ],
+  "items": [
+    {
+      "type": "stone",
+      "activates_zone": "zone_1",
+      "x": 4,
+      "y": 1
+    },
+    {
+      "type": "stone",
+      "activates_zone": "zone_1",
+      "x": 5,
+      "y": 1
+    },
+    {
+      "type": "stone",
+      "activates_zone": "zone_1",
+      "x": 5,
+      "y": 0
+    },
+    {
+      "type": "stone",
+      "activates_zone": "zone_1",
+      "x": 4,
+      "y": 0
+    },
+    {
+      "type": "box",
+      "hp": 3,
+      "x": 5,
+      "y": 5
+    },
+    {
+      "type": "box",
+      "hp": 3,
+      "x": 4,
+      "y": 6
+    },
+    {
+      "type": "box",
+      "hp": 3,
+      "x": 5,
+      "y": 6
+    },
+    {
+      "type": "block",
+      "value": 2,
+      "x": 0,
+      "y": 5
+    },
+    {
+      "type": "stone",
+      "activates_zone": "zone_1",
+      "x": 4,
+      "y": 2
+    },
+    {
+      "type": "stone",
+      "activates_zone": "zone_1",
+      "x": 5,
+      "y": 2
+    }
+  ],
+  "spawn_zones": [
+    {
+      "id": "zone_1",
+      "active": true,
+      "base_value": 2
+    },
+    {
+      "id": "zone_2",
+      "active": false,
+      "base_value": 8
+    }
+  ]
+}

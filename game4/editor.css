@@ -1,0 +1,346 @@
+body {
+    padding: 0;
+    margin: 0;
+    display: block;
+    overflow-y: auto;
+    background-color: #141a21; /* Solid professional dark background */
+}
+
+body::before {
+    display: none !important; /* Remove the blurry game background from editor */
+}
+
+input[type=range] {
+    -webkit-appearance: none;
+    width: 100%;
+    background: transparent;
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    height: 16px;
+    width: 16px;
+    border-radius: 50%;
+    background: #f1c40f;
+    cursor: pointer;
+    margin-top: -6px;
+}
+input[type=range]::-webkit-slider-runnable-track {
+    width: 100%;
+    height: 4px;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+}
+
+#editor-layout {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    padding: 20px;
+    gap: 20px;
+    color: white;
+}
+
+#editor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #2c3e50;
+    padding: 15px 30px;
+    border-radius: 4px;
+    border: 1px solid #1a252f;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-top: 0;
+}
+
+.header-controls {
+    display: flex;
+    gap: 20px;
+}
+
+.control-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.control-group input {
+    width: 60px;
+    padding: 5px;
+    border-radius: 5px;
+    border: none;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    font-weight: bold;
+    text-align: center;
+}
+
+#missions-container {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+#missions-list {
+    display: flex;
+    gap: 10px;
+}
+
+.mission-editor-item {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 10px;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    position: relative;
+    min-width: 60px;
+}
+.mission-editor-item:hover {
+    border-color: rgba(255, 255, 255, 0.5);
+}
+.mission-editor-item.selected {
+    border-color: #f1c40f;
+    box-shadow: 0 0 10px rgba(241, 196, 15, 0.5);
+}
+.mission-editor-item .delete-btn {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    padding: 2px 6px;
+    font-size: 0.8em;
+    border-radius: 50%;
+}
+.mission-editor-icon {
+    font-size: 1.5rem;
+}
+.mission-editor-amount {
+    font-weight: bold;
+}
+
+#editor-main {
+    display: flex;
+    flex: 1;
+    gap: 20px;
+}
+
+#editor-left-panel, #editor-right-panel {
+    width: 300px;
+    background: #2c3e50;
+    border-radius: 4px;
+    border: 1px solid #1a252f;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    flex-shrink: 0;
+}
+
+.palette-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#zones-palette {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.zone-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    cursor: pointer;
+    border: 2px solid transparent;
+}
+
+.zone-item.selected {
+    border-color: #4cd137;
+    background: rgba(76, 209, 55, 0.2);
+}
+
+.zone-color {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+}
+
+#objects-palette {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.palette-object {
+    width: 60px;
+    height: 60px;
+    position: relative;
+    cursor: grab;
+    transform: scale(0.8);
+    transform-origin: top left;
+    margin-right: -12px;
+    margin-bottom: -12px;
+}
+
+.palette-object:active {
+    cursor: grabbing;
+}
+
+#editor-canvas-container {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    overflow: auto;
+    background: #1a252f;
+    border-radius: 4px;
+    padding: 20px;
+}
+
+#board-container {
+    transform-origin: top left;
+}
+
+.grid-cell.hovered {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.grid-cell.drag-hover {
+    box-shadow: inset 0 0 0 3px #f1c40f;
+    background: rgba(241, 196, 15, 0.3) !important;
+}
+
+.grid-cell {
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
+.item {
+    cursor: pointer;
+}
+.item.selected {
+    box-shadow: 0 0 0 4px #f1c40f, 0 4px 10px rgba(0,0,0,0.4);
+    z-index: 20;
+}
+
+#properties-inspector {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.prop-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.prop-group label {
+    font-size: 0.9em;
+    opacity: 0.8;
+}
+
+.prop-group input, .prop-group select {
+    padding: 8px;
+    border-radius: 5px;
+    border: none;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.prop-group select option {
+    background: #2a2a2a;
+    color: white;
+}
+
+button {
+    padding: 10px 15px;
+    border-radius: 8px;
+    border: none;
+    background: #34495e;
+    color: white;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background 0.2s;
+}
+
+button:hover {
+    background: #2c3e50;
+}
+
+button.danger {
+    background: #e74c3c;
+}
+button.danger:hover {
+    background: #c0392b;
+}
+
+#editor-bottom-panel {
+    background: #2c3e50;
+    border: 1px solid #1a252f;
+    padding: 20px;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.io-header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.io-header-container h3 {
+    margin: 0;
+}
+
+#json-io {
+    width: 100%;
+    min-height: 200px;
+    background: #111;
+    color: #4cd137;
+    font-family: monospace;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #444;
+    resize: vertical;
+}
+
+.io-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+/* zone colors */
+.grid-cell.z-zone_1 { background: rgba(52, 152, 219, 0.3); }
+.grid-cell.z-zone_2 { background: rgba(155, 89, 182, 0.3); }
+.grid-cell.z-zone_3 { background: rgba(230, 126, 34, 0.3); }
+.grid-cell.z-zone_4 { background: rgba(46, 204, 113, 0.3); }
+.grid-cell.z-zone_5 { background: rgba(241, 196, 15, 0.3); }
+
+.zone-indicator {
+    position: absolute;
+    bottom: 4px;
+    right: 4px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 0 4px rgba(0,0,0,0.5);
+    z-index: 5;
+}
+
+#btn-copy-current:hover {
+    background: #555 !important;
+    color: #fff !important;
+    border-color: #777 !important;
+}

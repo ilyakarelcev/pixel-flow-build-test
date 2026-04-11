@@ -1,0 +1,78 @@
+{
+  "level_id": 7919,
+  "moves_limit": 120,
+  "missions": [
+    {
+      "type": "collect_block",
+      "amount": 1,
+      "target_value": 32
+    }
+  ],
+  "board_cells": [
+    {
+      "x": 0,
+      "y": 0,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 0,
+      "y": 2,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 1,
+      "y": 2,
+      "zone_id": "zone_1"
+    },
+    {
+      "x": 2,
+      "y": 2,
+      "zone_id": "zone_1"
+    }
+  ],
+  "items": [
+    {
+      "type": "block",
+      "value": 2,
+      "x": 0,
+      "y": 2
+    }
+  ],
+  "spawn_zones": [
+    {
+      "id": "zone_1",
+      "active": true,
+      "base_value": 2
+    },
+    {
+      "id": "zone_2",
+      "active": false,
+      "base_value": 8
+    }
+  ]
+}
