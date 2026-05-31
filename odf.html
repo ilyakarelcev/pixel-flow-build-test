@@ -1,0 +1,1352 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DataFest Belgrade — Schedule</title>
+  <style>
+    :root {
+      --bg: #eceef2;
+      --paper: #ffffff;
+      --ink: #1b1f27;
+      --muted: #6b7280;
+      --grid: #e4e7ec;
+      --grid-light: #eef0f3;
+      --hairline: #edeff2;
+      --head: #ffffff;
+      --common: #f6f7f9;
+      --break: #eaf6ef;
+      --party: #f4eefb;
+      --stage1: #fffbf4;
+      --stage2: #f5f8fe;
+      --stage1-strong: #b45309;
+      --stage2-strong: #2563eb;
+      --stage1-soft: #fbe9d6;
+      --stage2-soft: #e2ecff;
+      --speaker: #0f766e;
+      --company-bg: #f1f3f6;
+      --radius: 16px;
+      --shadow: 0 1px 2px rgba(16,24,40,.04), 0 10px 28px rgba(16,24,40,.07);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 13px;
+      line-height: 1.28;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    body.lang-en .ru {
+      display: none;
+    }
+
+    body.lang-ru .en {
+      display: none;
+    }
+
+    .page {
+      max-width: 1220px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-start;
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      margin: 0 0 4px;
+      font-size: 24px;
+      line-height: 1.1;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .controls {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    button {
+      border: 1px solid var(--grid);
+      background: var(--paper);
+      color: var(--muted);
+      padding: 7px 15px;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      border-radius: 999px;
+      transition: background .15s ease, color .15s ease, border-color .15s ease;
+    }
+
+    button:hover {
+      border-color: #cdd2da;
+      color: var(--ink);
+    }
+
+    button.active {
+      background: var(--ink);
+      color: white;
+      border-color: var(--ink);
+    }
+
+    .table-wrap {
+      background: var(--paper);
+      border: 1px solid var(--hairline);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      min-width: 0;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    col.time-col {
+      width: 86px;
+    }
+
+    col.stage-col {
+      width: calc((100% - 86px) / 2);
+    }
+
+    th, td {
+      vertical-align: top;
+      padding: 0;
+    }
+
+    tbody th, tbody td {
+      border-bottom: 1px solid var(--hairline);
+    }
+
+    td.stage2, td.session2 {
+      border-left: 1px solid var(--hairline);
+    }
+
+    thead th {
+      background: var(--head);
+      padding: 12px 13px;
+      text-align: left;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: .01em;
+      border-bottom: 1px solid var(--hairline);
+    }
+
+    thead th:nth-child(3) {
+      border-left: 1px solid var(--hairline);
+    }
+
+    thead th.time-head {
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .stage-room {
+      display: block;
+      margin-top: 2px;
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 400;
+    }
+
+    .time {
+      background: transparent;
+      color: var(--muted);
+      text-align: center;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 10px 6px;
+      white-space: nowrap;
+      border-right: 1px solid var(--hairline);
+    }
+
+    /* 6 тематических секций — у каждой свой цвет (фон ячеек докладов) */
+    td.th-agents   { background: #efe7fd; }  /* Agents & LLMs — фиолетовый */
+    td.th-recsys   { background: #e2edfe; }  /* RecSys ML — синий */
+    td.th-robotics { background: #dbf3ed; }  /* Robotics & CV — бирюзовый */
+    td.th-banking  { background: #fcebd0; }  /* Banking LM — янтарный */
+    td.th-dataq    { background: #fce1e9; }  /* Data Quality — розовый */
+    td.th-voice    { background: #d9eff9; }  /* Voice ML — голубой */
+
+    .session-row td {
+      padding: 9px 13px;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+    }
+
+    /* Плашки заголовков секций — те же 6 цветов, насыщеннее + цветной текст */
+    td.session.th-agents   { background: #ddd0fa; color: #6d28d9; }
+    td.session.th-recsys   { background: #cfe1fd; color: #1d4ed8; }
+    td.session.th-robotics { background: #bfeae1; color: #0f766e; }
+    td.session.th-banking  { background: #fad9b3; color: #b45309; }
+    td.session.th-dataq    { background: #facfdc; color: #be123c; }
+    td.session.th-voice    { background: #c4e6f6; color: #0369a1; }
+
+    .talk {
+      padding: 12px 13px;
+    }
+
+    .talk-title {
+      font-weight: 700;
+      font-size: 13.3px;
+      line-height: 1.3;
+      letter-spacing: -.005em;
+      margin-bottom: 6px;
+    }
+
+    .who {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 5px;
+      font-size: 11.5px;
+    }
+
+    .speaker {
+      color: var(--speaker);
+      font-weight: 700;
+    }
+
+    .company {
+      display: inline-block;
+      background: #475569;
+      color: #fff;
+      padding: 2px 9px;
+      border-radius: 999px;
+      font-size: 10.3px;
+      font-weight: 600;
+      letter-spacing: .02em;
+    }
+
+    .desc {
+      color: #50586a;
+      font-size: 11.6px;
+      line-height: 1.4;
+    }
+
+    .common-row td {
+      background: var(--common);
+    }
+
+    .common-cell {
+      padding: 11px 13px;
+    }
+
+    .common-title {
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    .common-meta {
+      margin-top: 3px;
+      color: #374151;
+      font-size: 11.5px;
+      font-weight: 700;
+    }
+
+    .common-cell.break {
+      background: var(--break);
+    }
+
+    .common-cell.party {
+      background: var(--party);
+    }
+
+    .networking {
+      border-top: 1px solid var(--grid);
+    }
+
+    .legend {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    /* --- Lorebase: персональная оценка важности (скрыта по умолчанию) --- */
+    .ai-eval {
+      display: none;
+      margin-top: 8px;
+      padding-top: 7px;
+      border-top: 1px solid var(--hairline);
+      gap: 8px;
+      align-items: baseline;
+    }
+
+    body.show-recs .ai-eval {
+      display: flex;
+    }
+
+    .ai-score {
+      flex: 0 0 auto;
+      font-weight: 700;
+      font-size: 11.5px;
+      color: #fff;
+      padding: 2px 9px;
+      border-radius: 999px;
+      white-space: nowrap;
+      letter-spacing: .01em;
+    }
+
+    .ai-h { background: #16a34a; }
+    .ai-m { background: #d97706; }
+    .ai-l { background: #94a3b8; }
+
+    .ai-note {
+      color: #50586a;
+      font-size: 11px;
+      font-style: italic;
+      line-height: 1.3;
+    }
+
+    /* Поясняющая строка в легенде — тоже только при включённых рекомендациях */
+    .rec-only {
+      display: none;
+    }
+
+    body.show-recs .rec-only {
+      display: inline;
+    }
+
+    /* Тумблер «Рекомендации для Ильи» */
+    .rec-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px 6px 9px;
+      border: 1px solid var(--grid);
+      border-radius: 999px;
+      background: var(--paper);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+      transition: background .15s ease, color .15s ease, border-color .15s ease;
+    }
+
+    .rec-toggle:hover {
+      border-color: #cdd2da;
+      color: var(--ink);
+    }
+
+    .rec-toggle input {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+      pointer-events: none;
+    }
+
+    .rec-switch {
+      position: relative;
+      flex: 0 0 auto;
+      width: 34px;
+      height: 18px;
+      border-radius: 999px;
+      background: #cbd2dc;
+      transition: background .18s ease;
+    }
+
+    .rec-switch::after {
+      content: "";
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 1px 2px rgba(16,24,40,.3);
+      transition: transform .18s ease;
+    }
+
+    .rec-toggle input:checked + .rec-switch {
+      background: #16a34a;
+    }
+
+    .rec-toggle input:checked + .rec-switch::after {
+      transform: translateX(16px);
+    }
+
+    body.show-recs .rec-toggle {
+      color: #15803d;
+      border-color: #c7e7d2;
+      background: #f1faf4;
+    }
+
+    @media print {
+      @page {
+        size: A4 landscape;
+        margin: 7mm;
+      }
+
+      body {
+        background: white;
+        font-size: 10px;
+        line-height: 1.16;
+      }
+
+      .page {
+        max-width: none;
+        padding: 0;
+      }
+
+      header {
+        margin-bottom: 5px;
+      }
+
+      h1 {
+        font-size: 16px;
+      }
+
+      .subtitle {
+        font-size: 9px;
+      }
+
+      .controls {
+        display: none;
+      }
+
+      .table-wrap {
+        border: 1px solid #777;
+        overflow: visible;
+      }
+
+      table {
+        min-width: 0;
+        table-layout: fixed;
+      }
+
+      col.time-col {
+        width: 58px;
+      }
+
+      thead th {
+        padding: 4px 5px;
+        font-size: 10px;
+      }
+
+      .stage-room {
+        font-size: 8px;
+      }
+
+      .time {
+        padding: 4px 2px;
+        font-size: 7.5px;
+      }
+
+      .session-row td {
+        padding: 3px 4px;
+        font-size: 8.5px;
+      }
+
+      .talk {
+        padding: 4px 5px;
+      }
+
+      .talk-title {
+        font-size: 8.6px;
+        line-height: 1.12;
+        margin-bottom: 2px;
+      }
+
+      .who {
+        gap: 3px;
+        margin-bottom: 2px;
+        font-size: 7.8px;
+      }
+
+      .company {
+        padding: 0 3px;
+        font-size: 7.2px;
+      }
+
+      .desc {
+        font-size: 7.6px;
+        line-height: 1.12;
+      }
+
+      .common-cell {
+        padding: 4px 5px;
+      }
+
+      .common-title {
+        font-size: 8.8px;
+      }
+
+      .common-meta {
+        margin-top: 1px;
+        font-size: 7.8px;
+      }
+
+      .legend {
+        display: none;
+      }
+
+      .ai-eval {
+        margin-top: 2px;
+        padding-top: 2px;
+        gap: 4px;
+      }
+
+      .ai-score {
+        font-size: 7.4px;
+        padding: 0 3px;
+      }
+
+      .ai-note {
+        font-size: 7.2px;
+      }
+    }
+
+    /* --- Планшет / телефон горизонтально: плотнее, но обе колонки целиком --- */
+    @media (max-width: 900px) {
+      body {
+        font-size: 12px;
+      }
+
+      .page {
+        padding: 10px;
+      }
+
+      col.time-col {
+        width: 64px;
+      }
+
+      .time {
+        font-size: 10.5px;
+        padding: 8px 4px;
+      }
+
+      .session-row td {
+        padding: 7px 10px;
+      }
+
+      .talk {
+        padding: 9px 10px;
+      }
+
+      .talk-title {
+        font-size: 12.4px;
+      }
+
+      .who {
+        font-size: 11px;
+      }
+
+      .desc {
+        font-size: 11px;
+      }
+
+      .common-cell {
+        padding: 9px 11px;
+      }
+    }
+
+    /* --- Mobile: обе колонки помещаются по ширине, время в столбик, мелкий шрифт --- */
+    @media (max-width: 640px) {
+      body {
+        font-size: 10px;
+        line-height: 1.2;
+      }
+
+      .page {
+        max-width: none;
+        padding: 3px;
+      }
+
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+        margin-bottom: 6px;
+      }
+
+      h1 {
+        font-size: 16px;
+      }
+
+      .subtitle {
+        font-size: 10px;
+      }
+
+      .controls {
+        justify-content: flex-start;
+      }
+
+      button {
+        padding: 5px 8px;
+      }
+
+      /* Главное: убрать горизонтальный скролл и дать таблице ужаться под экран */
+      .table-wrap {
+        overflow: hidden;
+        border-radius: 14px;
+      }
+
+      .rec-toggle {
+        font-size: 11px;
+        padding: 5px 12px 5px 8px;
+      }
+
+      table {
+        min-width: 0;
+      }
+
+      col.time-col {
+        width: 32px;
+      }
+
+      col.stage-col {
+        width: calc((100% - 32px) / 2);
+      }
+
+      thead th {
+        padding: 3px 4px;
+        font-size: 9.5px;
+      }
+
+      thead th.time-head {
+        font-size: 8px;
+      }
+
+      .stage-room {
+        margin-top: 1px;
+        font-size: 7.5px;
+      }
+
+      .time {
+        padding: 3px 1px;
+        font-size: 7.5px;
+        white-space: normal;
+        line-height: 1.05;
+      }
+
+      .session-row td {
+        padding: 3px 4px;
+        font-size: 9px;
+      }
+
+      .talk {
+        padding: 3px 4px;
+      }
+
+      .talk-title {
+        font-size: 9.5px;
+        line-height: 1.12;
+        margin-bottom: 3px;
+      }
+
+      .who {
+        gap: 3px;
+        margin-bottom: 3px;
+        font-size: 8.5px;
+      }
+
+      .company {
+        padding: 0 3px;
+        font-size: 7.8px;
+      }
+
+      .desc {
+        font-size: 8.5px;
+        line-height: 1.15;
+      }
+
+      .common-cell {
+        padding: 4px 5px;
+      }
+
+      .common-title {
+        font-size: 9.5px;
+      }
+
+      .common-meta {
+        margin-top: 2px;
+        font-size: 8.5px;
+      }
+
+      .ai-eval {
+        margin-top: 3px;
+        padding-top: 3px;
+        gap: 4px;
+      }
+
+      .ai-score {
+        font-size: 8.5px;
+        padding: 0 4px;
+      }
+
+      .ai-note {
+        font-size: 8px;
+        line-height: 1.12;
+      }
+
+      .legend {
+        font-size: 9px;
+      }
+    }
+  </style>
+</head>
+<body class="lang-en">
+  <div class="page">
+    <header>
+      <div>
+        <h1><span class="en">DataFest — Belgrade, May 31</span><span class="ru">DataFest — Белград, 31 мая</span></h1>
+        <div class="subtitle">
+          <span class="en">FON, University of Belgrade. Two-stage table. Common events span both stages.</span><span class="ru">FON, Белградский университет. Таблица на два зала. Общие события занимают обе колонки.</span>
+        </div>
+      </div>
+      <div class="controls">
+        <button id="btn-en" class="active" onclick="setLang('en')">EN</button>
+        <button id="btn-ru" onclick="setLang('ru')">RU</button>
+        <button onclick="window.print()"><span class="en">Print / Save PDF</span><span class="ru">Печать / сохранить PDF</span></button>
+        <label class="rec-toggle">
+          <input type="checkbox" id="rec-checkbox" onchange="toggleRecs(this)">
+          <span class="rec-switch"></span>
+          <span class="en">Recommendations for Ilya</span><span class="ru">Рекомендации для Ильи</span>
+        </label>
+      </div>
+    </header>
+
+    <div class="table-wrap">
+      <table>
+        <colgroup>
+          <col class="time-col">
+          <col class="stage-col">
+          <col class="stage-col">
+        </colgroup>
+        <thead>
+          <tr>
+            <th class="time-head"><span class="en">Time</span><span class="ru">Время</span></th>
+            <th><span class="en">Stage 1</span><span class="ru">Stage 1</span><span class="stage-room"><span class="en">Amphitheater 1</span><span class="ru">Амфитеатр 1</span></span></th>
+            <th><span class="en">Stage 2</span><span class="ru">Stage 2</span><span class="stage-room"><span class="en">Amphitheater 2</span><span class="ru">Амфитеатр 2</span></span></th>
+          </tr>
+        </thead>
+        <tbody>
+          
+      <tr class="common-row">
+        <th class="time">12:00–12:45</th>
+        <td colspan="2">
+      <div class="common-cell common">
+        <div class="common-title"><span class="en">Guest Registration &amp; Welcome</span><span class="ru">Регистрация гостей и приветствие</span></div>
+        
+        
+      </div>
+    </td>
+      </tr>
+    
+
+          
+      <tr class="common-row">
+        <th class="time">12:45–12:50</th>
+        <td colspan="2">
+      <div class="common-cell common">
+        <div class="common-title"><span class="en">Opening Remarks</span><span class="ru">Вступительное слово</span></div>
+        <div class="common-meta"><span class="en">Salavat Gariffullin, ODS Serbia</span><span class="ru">Салават Гарифуллин, ODS Serbia</span></div>
+        
+      </div>
+    </td>
+      </tr>
+    
+
+          
+      <tr class="common-row">
+        <th class="time">12:50–13:00</th>
+        <td colspan="2">
+      <div class="common-cell common">
+        <div class="common-title"><span class="en">Welcome Address</span><span class="ru">Приветственная речь</span></div>
+        <div class="common-meta"><span class="en">Prof. Dragan Vukmirović, PhD (FON University)</span><span class="ru">Проф. Драган Вукмирович, PhD (FON University)</span></div>
+        <div class="desc"><span class="en">From Big Data to AI-native: 7V, Synthetic Data and the New Role of Data Science in Industry</span><span class="ru">От Big Data к AI-native: 7V, синтетические данные и новая роль Data Science в индустрии</span></div>
+      </div>
+    </td>
+      </tr>
+    
+
+          
+      <tr class="session-row">
+        <th class="time">13:00–14:40</th>
+        <td class="session session1"><span class="en">Agents &amp; LLMs</span><span class="ru">Агенты и LLM</span></td>
+        <td class="session session2"><span class="en">RecSys ML</span><span class="ru">RecSys ML</span></td>
+      </tr>
+    
+
+          
+      <tr>
+        <th class="time">13:00–13:25</th>
+        <td class="stage1">
+      <div class="talk">
+        <div class="talk-title"><span class="en">User-Guided LLM Answer Quality Evaluation</span><span class="ru">Оценка качества ответов LLM на основе пользовательской обратной связи</span></div>
+        
+      <div class="who">
+        <span class="speaker"><span class="en">Ivan Bushmarinov</span><span class="ru">Иван Бушмаринов</span></span>
+        <span class="company"><span class="en">Perplexity</span><span class="ru">Perplexity</span></span>
+      </div>
+    
+        <div class="desc"><span class="en">Leveraging thread-style user feedback and small trained models to evaluate frontier LLM answers and enable scalable benchmarking.</span><span class="ru">Использование пользовательской обратной связи в формате тредов и небольших обученных моделей для оценки ответов передовых LLM и масштабируемого бенчмаркинга.</span></div>
+        <div class="ai-eval">
+          <span class="ai-score ai-m">6/10</span>
+          <span class="ai-note">Оценка LLM — смежно, но узко про бенчмаркинг.</span>
+        </div>
+      </div>
+    </td>
+        <td class="stage2">
+      <div class="talk">
+        <div class="talk-title"><span class="en">LLM-Powered Item-to-Item Recs in Lavka</span><span class="ru">Item-to-item рекомендации в Lavka на базе LLM</span></div>
+        
+      <div class="who">
+        <span class="speaker"><span class="en">Alexander Eroshenko</span><span class="ru">Александр Ерошенко</span></span>
+        <span class="company"><span class="en">Yandex</span><span class="ru">Yandex</span></span>
+      </div>
+    
+        <div class="desc"><span class="en">Practical case of deploying a compact LLM (Gemma ~270M) for item-to-item recommendations of substitutes and complements.</span><span class="ru">Практический кейс внедрения компактной LLM (Gemma ~270M) для item-to-item рекомендаций замен и дополнений.</span></div>
+        <div class="ai-eval">
+          <span class="ai-score ai-l">4/10</span>
+          <span class="ai-note">RecSys не твой домен, хотя кейс компактной LLM любопытен.</span>
+        </div>
+      </div>
+    </td>
+      </tr>
+    
+
+          
+      <tr>
+        <th class="time">13:25–13:50</th>
+        <td class="stage1">
+      <div class="talk">
+        <div class="talk-title"><span class="en">How not to build agentic AI: 4 (very common) anti-patterns and what to do instead</span><span class="ru">Как не надо строить agentic AI: 4 очень частых анти-паттерна и что делать вместо этого</span></div>
+        
+      <div class="who">
+        <span class="speaker"><span class="en">Ksenija Blažević</span><span class="ru">Ксения Блажевич</span></span>
+        <span class="company"><span class="en">Lemana Tech</span><span class="ru">Lemana Tech</span></span>
+      </div>
+    
+        <div class="desc"><span class="en">Common anti-patterns in agentic AI and how to replace them with leaner, cost-efficient architectures.</span><span class="ru">Частые анти-паттерны в agentic AI и как заменить их более простыми и экономичными архитектурами.</span></div>
+        <div class="ai-eval">
+          <span class="ai-score ai-h">9/10</span>
+          <span class="ai-note">Прямо твоё: практичные паттерны agentic AI.</span>
+        </div>
+      </div>
+    </td>
+        <td class="stage2">
+      <div class="talk">
+        <div class="talk-title"><span class="en">Beyond Funnels: Advanced UX Analytics</span><span class="ru">За пределами воронок: продвинутая UX-аналитика</span></div>
+        
+      <div class="who">
+        <span class="speaker"><span class="en">Vladimir Kukushkin</span><span class="ru">Владимир Кукушкин</span></span>
+        <span class="company"><span class="en">Independent Researcher</span><span class="ru">независимый исследователь</span></span>
+      </div>
+    
+        <div class="desc"><span class="en">How to study user behavior deeper than traditional funnels using advanced UX analytics tools and user journey analysis.</span><span class="ru">Как изучать поведение пользователей глубже традиционных воронок с помощью продвинутой UX-аналитики и анализа пользовательских путей.</span></div>
+        <div class="ai-eval">
+          <span class="ai-score ai-m">5/10</span>
+          <span class="ai-note">Продуктовый UX — по касательной к твоему чутью на продукт.</span>
+        </div>
+      </div>
+    </td>
+      </tr>
+    
+
+          
+      <tr>
+        <th class="time">13:50–14:15</th>
+        <td class="stage1">
+      <div class="talk">
+        <div class="talk-title"><span class="en">Orchestrating Coding Models</span><span class="ru">Оркестрация моделей для кодинга</span></div>
+        
+      <div class="who">
+        <span class="speaker"><span class="en">Dmitrii Krasnov</span><span class="ru">Дмитрий Краснов</span></span>
+        <span class="company"><span class="en">Zencoder</span><span class="ru">Zencoder</span></span>
+      </div>
+    
+        <div class="desc"><span class="en">Comparison of sequential, parallel, and OSS orchestration for coding models and their impact on SWE-bench-like benchmarks.</span><span class="ru">Сравнение последовательной, параллельной и OSS-оркестрации кодинговых моделей и их влияния на SWE-bench-подобные бенчмарки.</span></div>
+        <div class="ai-eval">
+          <span class="ai-score ai-h">9/10</span>
+          <span class="ai-note">Оркестрация кодинговых моделей — твой рабочий инструмент.</span>
+        </div>
+      </div>
+    </td>
+        <td class="stage2">
+      <div class="talk">
+        <div class="talk-title"><span class="en">SplitLight: RecSys Evaluation Toolkit</span><span class="ru">SplitLight: набор инструментов для оценки RecSys</span></div>
+        
+      <div class="who">
+        <span class="speaker"><span class="en">Alexey Vasilev</span><span class="ru">Алексей Василев</span></span>
+        <span class="company"><span class="en">Sber AI Lab</span><span class="ru">Sber AI Lab</span></span>
+      </div>
+    
+        <div class="desc"><span class="en">Open-source toolkit for analyzing datasets and split strategies in RecSys to make offline evaluation transparent and reproducible.</span><span class="ru">Open-source инструмент для анализа датасетов и стратегий разбиения в RecSys, чтобы сделать offline-оценку прозрачной и воспроизводимой.</span></div>
+        <div class="ai-eval">
+          <span class="ai-score ai-l">2/10</span>
+        </div>
+      </div>
+    </td>
+      </tr>
+    
+
+          
+      <tr>
+        <th class="time">14:15–14:40</th>
+        <td class="stage1">
+      <div class="talk">
+        <div class="talk-title"><span class="en">When Models Should Stay Silent</span><span class="ru">Когда моделям лучше молчать</span></div>
+        
+      <div class="who">
+        <span class="speaker"><span class="en">Michael Diskin</span><span class="ru">Михаил Дискин</span></span>
+        <span class="company"><span class="en">HSE University</span><span class="ru">HSE University</span></span>
+      </div>
+    
+        <div class="desc"><span class="en">Measuring model uncertainty, calibrating confidence, and implementing rejection mechanisms for more reliable LLM systems in production.</span><span class="ru">Измерение неопределённости моделей, калибровка уверенности и внедрение механизмов отказа для более надёжных LLM-систем в продакшене.</span></div>
+        <div class="ai-eval">
+          <span class="ai-score ai-m">7/10</span>
+          <span class="ai-note">Калибровка и отказ модели — для надёжных LLM-продуктов.</span>
+        </div>
+      </div>
+    </td>
+        <td class="stage2">
+      <div class="talk">
+        <div class="talk-title"><span class="en">Knowledge Transfer from Pre-trained LLMs to Recommender Models</span><span class="ru">Перенос знаний из предобученных LLM в рекомендательные модели</span></div>
+        
+      <div class="who">
+        <span class="speaker"><span class="en">Nikita Severin</span><span class="ru">Никита Северин</span></span>
+        <span class="company"><span class="en">Independent Researcher</span><span class="ru">независимый исследователь</span></span>
+      </div>
+    
+        <div class="desc"><span class="en">Efficient knowledge transfer from pre-trained LLMs to recommender models without costly serving-time inference or architectural changes.</span><span class="ru">Эффективный перенос знаний из предобученных LLM в рекомендательные модели без дорогого инференса во время сервинга и без изменений архитектуры.</span></div>
+        <div class="ai-eval">
+          <span class="ai-score ai-l">3/10</span>
+        </div>
+      </div>
+    </td>
+      </tr>
+    
+
+          
+      <tr class="common-row">
+        <th class="time">14:40–15:10</th>
+        <td colspan="2">
+      <div class="common-cell break">
+        <div class="common-title"><span class="en">Coffee Break</span><span class="ru">Кофе-брейк</span></div>
+        
+        
+      </div>
+    </td>
+      </tr>
+    
+
+          
+      <tr class="session-row">
+        <th class="time">15:10–16:25</th>
+        <td class="session session1"><span class="en">Robotics &amp; CV</span><span class="ru">Робототехника и CV</span></td>
+        <td class="session session2"><span class="en">Banking Language Models</span><span class="ru">Языковые модели в банкинге</span></td>
+      </tr>
+    
+
+          
+      <tr>
+        <th class="time">15:10–15:35</th>
+        <td class="stage1">
+      <div class="talk">
+        <div class="talk-title"><span class="en">RL for Real-World Robot Motion Planning</span><span class="ru">RL для планирования движения роботов в реальном мире</span></div>
+        
+      <div class="who">
+        <span class="speaker"><span class="en">Fedor Kurdov</span><span class="ru">Фёдор Курдов</span></span>
+        <span class="company"><span class="en">Yandex</span><span class="ru">Yandex</span></span>
+      </div>
+    
+        <div class="desc"><span class="en">How RL (without imitation learning) was built from scratch and deployed for motion planning in Yandex&#x27;s sidewalk delivery rovers.</span><span class="ru">Как RL без imitation learning был построен с нуля и внедрён для планирования движения тротуарных роботов-доставщиков Yandex.</span></div>
+        <div class="ai-eval">
+          <span class="ai-score ai-m">6/10</span>
+          <span class="ai-note">RL и роботы — интересно как наука, прямого применения мало.</span>
+        </div>
+      </div>
+    </td>
+        <td class="stage2">
+      <div class="talk">
+        <div class="talk-title"><span class="en">Learning from Unstructured Sequences in 2026</span><span class="ru">Обучение на неструктурированных последовательностях в 2026</span></div>
+        
+      <div class="who">
+        <span class="speaker"><span class="en">Boris Tseitlin</span><span class="ru">Борис Цейтлин</span></span>
+        <span class="company"><span class="en">Banco Plata</span><span class="ru">Banco Plata</span></span>
+      </div>
+    
+        <div class="desc"><span class="en">Overview of self-supervised and foundation-model approaches to embeddings from transactions, events, and other unstructured sequences.</span><span class="ru">Обзор self-supervised и foundation-model подходов к эмбеддингам транзакций, событий и других неструктурированных последовательностей.</span></div>
+        <div class="ai-eval">
+          <span class="ai-score ai-l">4/10</span>
+        </div>
+      </div>
+    </td>
+      </tr>
+    
+
+          
+      <tr>
+        <th class="time">15:35–16:00</th>
+        <td class="stage1">
+      <div class="talk">
+        <div class="talk-title"><span class="en">Making Industrial CV Fly on Edge CPUs: A Neuro-Symbolic Benchmark for Dense Instance Segmentation</span><span class="ru">Как ускорить промышленное CV на edge CPU: нейро-символьный бенчмарк для dense instance segmentation</span></div>
+        
+      <div class="who">
+        <span class="speaker"><span class="en">Dmitrii Iunovidov</span><span class="ru">Дмитрий Иуновидов</span></span>
+        <span class="company"><span class="en">LogicYield</span><span class="ru">LogicYield</span></span>
+      </div>
+    
+        <div class="desc"><span class="en">Running industrial computer vision on edge CPUs in harsh factory conditions using inference optimization and neuro-symbolic methods.</span><span class="ru">Запуск промышленного компьютерного зрения на edge CPU в тяжёлых заводских условиях с помощью оптимизации инференса и нейро-символьных методов.</span></div>
+        <div class="ai-eval">
+          <span class="ai-score ai-l">4/10</span>
+        </div>
+      </div>
+    </td>
+        <td class="stage2">
+      <div class="talk">
+        <div class="talk-title"><span class="en">PV Models in Retail Lending</span><span class="ru">PV-модели в розничном кредитовании</span></div>
+        
+      <div class="who">
+        <span class="speaker"><span class="en">Mikhail Sysoev</span><span class="ru">Михаил Сысоев</span></span>
+        <span class="company"><span class="en">Banco Plata</span><span class="ru">Banco Plata</span></span>
+      </div>
+    
+        <div class="desc"><span class="en">PV models and approaches to optimizing product parameters in card-based fintech products.</span><span class="ru">PV-модели и подходы к оптимизации параметров продукта в карточных финтех-продуктах.</span></div>
+        <div class="ai-eval">
+          <span class="ai-score ai-l">1/10</span>
+        </div>
+      </div>
+    </td>
+      </tr>
+    
+
+          
+      <tr>
+        <th class="time">16:00–16:25</th>
+        <td class="stage1">
+      <div class="talk">
+        <div class="talk-title"><span class="en">Physical AI: Status and the Road Ahead</span><span class="ru">Physical AI: текущее состояние и дальнейший путь</span></div>
+        
+      <div class="who">
+        <span class="speaker"><span class="en">Aleksey Postnikov</span><span class="ru">Алексей Постников</span></span>
+        <span class="company"><span class="en">Sber Robotics Lab</span><span class="ru">Sber Robotics Lab</span></span>
+      </div>
+    
+        <div class="desc"><span class="en">Broad overview of Physical AI: synthetic data, sim-to-real, RL over behavior cloning, and learning policies from human videos.</span><span class="ru">Широкий обзор Physical AI: синтетические данные, sim-to-real, RL вместо behavior cloning и обучение политик по человеческим видео.</span></div>
+        <div class="ai-eval">
+          <span class="ai-score ai-m">7/10</span>
+          <span class="ai-note">Широкий обзор Physical AI — кормит картину мира.</span>
+        </div>
+      </div>
+    </td>
+        <td class="stage2">
+      <div class="talk">
+        <div class="talk-title"><span class="en">Transformers Replace Feature Engineering in Scoring</span><span class="ru">Трансформеры заменяют feature engineering в скоринге</span></div>
+        
+      <div class="who">
+        <span class="speaker"><span class="en">Victor Barbarich</span><span class="ru">Виктор Барбарич</span></span>
+        <span class="company"><span class="en">Banco Plata</span><span class="ru">Banco Plata</span></span>
+      </div>
+    
+        <div class="desc"><span class="en">Moving from manual feature engineering in credit scoring to transformers that learn directly from raw account and employment histories.</span><span class="ru">Переход от ручного feature engineering в кредитном скоринге к трансформерам, которые учатся напрямую на сырых историях счетов и занятости.</span></div>
+        <div class="ai-eval">
+          <span class="ai-score ai-l">2/10</span>
+        </div>
+      </div>
+    </td>
+      </tr>
+    
+
+          
+      <tr class="common-row">
+        <th class="time">16:25–17:25</th>
+        <td colspan="2">
+      <div class="common-cell break">
+        <div class="common-title"><span class="en">Lunch Break</span><span class="ru">Обеденный перерыв</span></div>
+        
+        
+      </div>
+    </td>
+      </tr>
+    
+
+          
+      <tr class="session-row">
+        <th class="time">17:25–19:05</th>
+        <td class="session session1"><span class="en">Data Quality</span><span class="ru">Качество данных</span></td>
+        <td class="session session2"><span class="en">Voice ML</span><span class="ru">Voice ML</span></td>
+      </tr>
+    
+
+          
+      <tr>
+        <th class="time">17:25–17:50</th>
+        <td class="stage1">
+      <div class="talk">
+        <div class="talk-title"><span class="en">Agent for Data Labelling. LLM with Hammer and Ruler</span><span class="ru">Агент для разметки данных. LLM с молотком и линейкой</span></div>
+        
+      <div class="who">
+        <span class="speaker"><span class="en">Oleg Sekachev</span><span class="ru">Олег Секачев</span></span>
+        <span class="company"><span class="en">Yandex</span><span class="ru">Yandex</span></span>
+      </div>
+    
+        <div class="desc"><span class="en">Quality data labelling — faster and cheaper than humans, simpler and more accurate than a bare LLM.</span><span class="ru">Качественная разметка данных — быстрее и дешевле людей, проще и точнее, чем голая LLM.</span></div>
+        <div class="ai-eval">
+          <span class="ai-score ai-m">6/10</span>
+          <span class="ai-note">LLM-агент в проде — близко к твоим интересам.</span>
+        </div>
+      </div>
+    </td>
+        <td class="stage2">
+      <div class="talk">
+        <div class="talk-title"><span class="en">AI video dubbing with open source — How we’ve built speech-to-speech pipeline and what we’ve learned from it</span><span class="ru">AI-дубляж видео на open source — как мы построили speech-to-speech pipeline и чему научились</span></div>
+        
+      <div class="who">
+        <span class="speaker"><span class="en">Ilya Shigabeev</span><span class="ru">Илья Шигабеев</span></span>
+        <span class="company"><span class="en">Langswap.app</span><span class="ru">Langswap.app</span></span>
+      </div>
+    
+        <div class="desc"><span class="en">Challenges in AI dubbing: different text lengths after translation, preserving pauses from the source video, accent issues, and dependency hell — with a walkthrough of the open-source pipeline.</span><span class="ru">Сложности AI-дубляжа: разная длина текста после перевода, сохранение пауз исходного видео, проблемы с акцентами и dependency hell — с разбором open-source pipeline.</span></div>
+        <div class="ai-eval">
+          <span class="ai-score ai-m">7/10</span>
+          <span class="ai-note">Open-source дубляж — полезно под твой YouTube-вектор.</span>
+        </div>
+      </div>
+    </td>
+      </tr>
+    
+
+          
+      <tr>
+        <th class="time">17:50–18:15</th>
+        <td class="stage1">
+      <div class="talk">
+        <div class="talk-title"><span class="en">How we (didn&#x27;t) build an AutoEval</span><span class="ru">Как мы (не) построили AutoEval</span></div>
+        
+      <div class="who">
+        <span class="speaker"><span class="en">Anastasiia Margolina</span><span class="ru">Анастасия Марголина</span></span>
+        <span class="company"><span class="en">Banco Plata</span><span class="ru">Banco Plata</span></span>
+      </div>
+    
+        <div class="desc"><span class="en">A story about evaluating AI when the answers are about real money — and how the autoeval we thought would be a single prompt turned into a methodology.</span><span class="ru">История об оценке AI, когда ответы связаны с реальными деньгами — и как autoeval, который казался одним промптом, превратился в методологию.</span></div>
+        <div class="ai-eval">
+          <span class="ai-score ai-m">5/10</span>
+        </div>
+      </div>
+    </td>
+        <td class="stage2">
+      <div class="talk">
+        <div class="talk-title"><span class="en">Device-Directed Speech Detection for Alice</span><span class="ru">Определение речи, обращённой к устройству, для Alice</span></div>
+        
+      <div class="who">
+        <span class="speaker"><span class="en">Pavel Mazaev</span><span class="ru">Павел Мазаев</span></span>
+        <span class="company"><span class="en">Yandex</span><span class="ru">Yandex</span></span>
+      </div>
+    
+        <div class="desc"><span class="en">Production system for detecting speech directed at a smart device (Yandex Alice) to enable natural dialogue without a constant wake word.</span><span class="ru">Продакшен-система для определения речи, обращённой к умному устройству (Yandex Alice), чтобы вести естественный диалог без постоянного wake word.</span></div>
+        <div class="ai-eval">
+          <span class="ai-score ai-l">4/10</span>
+        </div>
+      </div>
+    </td>
+      </tr>
+    
+
+          
+      <tr>
+        <th class="time">18:15–18:40</th>
+        <td class="stage1">
+      <div class="talk">
+        <div class="talk-title"><span class="en">LLM-Powered Harmonization of 100M+ Places</span><span class="ru">Гармонизация 100M+ мест с помощью LLM</span></div>
+        
+      <div class="who">
+        <span class="speaker"><span class="en">Stefan Hačko</span><span class="ru">Стефан Хачко</span></span>
+        <span class="company"><span class="en">Foursquare</span><span class="ru">Foursquare</span></span>
+      </div>
+    
+        <div class="desc"><span class="en">How Foursquare uses LLMs and vector embeddings to clean, match, and unify massive third-party venue datasets at scale.</span><span class="ru">Как Foursquare использует LLM и векторные эмбеддинги, чтобы очищать, сопоставлять и объединять огромные сторонние датасеты площадок в масштабе.</span></div>
+        <div class="ai-eval">
+          <span class="ai-score ai-m">5/10</span>
+        </div>
+      </div>
+    </td>
+        <td class="stage2">
+      <div class="talk">
+        <div class="talk-title"><span class="en">From Model Compression to Local Inference Platform</span><span class="ru">От сжатия моделей к локальной inference-платформе</span></div>
+        
+      <div class="who">
+        <span class="speaker"><span class="en">Fedor Konovalenko</span><span class="ru">Фёдор Коноваленко</span></span>
+        <span class="company"><span class="en">MIL Team (MIPT)</span><span class="ru">MIL Team (MIPT)</span></span>
+      </div>
+    
+        <div class="desc"><span class="en">How a model compression tool evolved into a local GenAI inference platform with OpenAI-compatible API, multi-engine support, and observability.</span><span class="ru">Как инструмент сжатия моделей вырос в локальную GenAI inference-платформу с OpenAI-совместимым API, поддержкой нескольких движков и observability.</span></div>
+        <div class="ai-eval">
+          <span class="ai-score ai-m">7/10</span>
+          <span class="ai-note">Локальный inference — пригодится встраивать модели в продукты.</span>
+        </div>
+      </div>
+    </td>
+      </tr>
+    
+
+          
+      <tr>
+        <th class="time">18:40–19:05</th>
+        <td class="stage1">
+      <div class="talk">
+        <div class="talk-title"><span class="en">SHARP: Span-level Hallucination Annotation for Reasoning Paths</span><span class="ru">SHARP: span-level разметка галлюцинаций в reasoning paths</span></div>
+        
+      <div class="who">
+        <span class="speaker"><span class="en">Alexey Korotkov &amp; Timofey Garaev</span><span class="ru">Алексей Коротков и Тимофей Гараев</span></span>
+        <span class="company"><span class="en">MIPT AI Institute</span><span class="ru">MIPT AI Institute</span></span>
+      </div>
+    
+        <div class="desc"><span class="en">New span-level dataset for hallucination detection in LLM reasoning paths and why it yields better downstream quality for PRM models.</span><span class="ru">Новый span-level датасет для детекции галлюцинаций в reasoning paths LLM и почему он даёт лучшее downstream-качество для PRM-моделей.</span></div>
+        <div class="ai-eval">
+          <span class="ai-score ai-m">5/10</span>
+        </div>
+      </div>
+    </td>
+        <td class="stage2">
+      <div class="talk">
+        <div class="talk-title"><span class="en">Video2Text: Industry State &amp; Practical Choices</span><span class="ru">Video2Text: состояние индустрии и практический выбор</span></div>
+        
+      <div class="who">
+        <span class="speaker"><span class="en">Pavel Guliaev</span><span class="ru">Павел Гуляев</span></span>
+        <span class="company"><span class="en">Independent Researcher</span><span class="ru">независимый исследователь</span></span>
+      </div>
+    
+        <div class="desc"><span class="en">State of the Video2Text industry — what works, current limitations, and how to pick and adapt solutions for production load and budget.</span><span class="ru">Состояние индустрии Video2Text — что работает, текущие ограничения и как выбирать и адаптировать решения под продакшен-нагрузку и бюджет.</span></div>
+        <div class="ai-eval">
+          <span class="ai-score ai-m">6/10</span>
+          <span class="ai-note">Практический выбор Video2Text — под контент и продукты.</span>
+        </div>
+      </div>
+    </td>
+      </tr>
+    
+
+          
+      <tr class="common-row">
+        <th class="time">19:05–19:15</th>
+        <td colspan="2">
+      <div class="common-cell common">
+        <div class="common-title"><span class="en">Closing Remarks</span><span class="ru">Заключительное слово</span></div>
+        <div class="common-meta"><span class="en">Salavat Gariffullin, ODS Serbia</span><span class="ru">Салават Гарифуллин, ODS Serbia</span></div>
+        
+      </div>
+    </td>
+      </tr>
+    
+
+          
+      <tr class="common-row">
+        <th class="time">19:15</th>
+        <td colspan="2">
+      <div class="common-cell party">
+        <div class="common-title"><span class="en">After-party 🎉</span><span class="ru">After-party 🎉</span></div>
+        
+        
+      </div>
+    </td>
+      </tr>
+    
+
+          
+      <tr class="common-row networking">
+        <th class="time"></th>
+        <td colspan="2">
+      <div class="common-cell common">
+        <div class="common-title"><span class="en">Networking Lounge — Library</span><span class="ru">Networking Lounge — Library</span></div>
+        <div class="common-meta"><span class="en">Open for networking throughout the event, especially during breaks.</span><span class="ru">Открыт для нетворкинга в течение всего мероприятия, особенно во время перерывов.</span></div>
+        
+      </div>
+    </td>
+      </tr>
+    
+        </tbody>
+      </table>
+    </div>
+
+    <div class="legend">
+      <span class="en">Speaker names are green; companies are shown as compact labels.</span><span class="ru">Имена спикеров выделены зелёным; компании показаны компактными метками.</span>
+      <span class="rec-only"><br>
+      <strong>Lorebase:</strong> цветной бейдж под каждой лекцией — оценка важности лично для тебя от 0 до 10 (<span style="color:#16a34a;font-weight:700">зелёный 8–10</span>, <span style="color:#d97706;font-weight:700">оранжевый 5–7</span>, <span style="color:#94a3b8;font-weight:700">серый 0–4</span>). Топ под твои интересы: «How not to build agentic AI» и «Orchestrating Coding Models» (по 9/10).</span>
+    </div>
+  </div>
+
+  <script>
+    function setLang(lang) {
+      document.body.classList.remove('lang-en', 'lang-ru');
+      document.body.classList.add('lang-' + lang);
+      document.documentElement.lang = lang;
+      document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+      document.getElementById('btn-ru').classList.toggle('active', lang === 'ru');
+    }
+
+    function toggleRecs(cb) {
+      document.body.classList.toggle('show-recs', cb.checked);
+      try { localStorage.setItem('lorebaseRecs', cb.checked ? '1' : '0'); } catch (e) {}
+    }
+
+    // По умолчанию рекомендации скрыты. Запоминаем личный выбор только в этом браузере —
+    // при шеринге файла/ссылки другой человек откроет с выключенными рекомендациями.
+    (function () {
+      var on = false;
+      try { on = localStorage.getItem('lorebaseRecs') === '1'; } catch (e) {}
+      if (on) {
+        document.body.classList.add('show-recs');
+        var cb = document.getElementById('rec-checkbox');
+        if (cb) cb.checked = true;
+      }
+    })();
+
+    // Раскраска по 6 тематикам: каждый временной блок задаёт пару тем
+    // (Stage 1 / Stage 2), которая применяется к его докладам.
+    (function () {
+      var themes = [
+        ['th-agents', 'th-recsys'],
+        ['th-robotics', 'th-banking'],
+        ['th-dataq', 'th-voice']
+      ];
+      var block = -1;
+      var cur = ['', ''];
+      var rows = document.querySelectorAll('tbody tr');
+      Array.prototype.forEach.call(rows, function (tr) {
+        if (tr.classList.contains('session-row')) {
+          block++;
+          cur = themes[block] || ['', ''];
+          var cells = tr.querySelectorAll('td');
+          if (cells[0] && cur[0]) cells[0].classList.add(cur[0]);
+          if (cells[1] && cur[1]) cells[1].classList.add(cur[1]);
+          return;
+        }
+        var s1 = tr.querySelector('td.stage1');
+        var s2 = tr.querySelector('td.stage2');
+        if (s1 && cur[0]) s1.classList.add(cur[0]);
+        if (s2 && cur[1]) s2.classList.add(cur[1]);
+      });
+    })();
+  </script>
+</body>
+</html>
