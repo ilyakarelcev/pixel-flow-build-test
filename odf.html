@@ -12,7 +12,7 @@
       --muted: #6b7280;
       --grid: #e4e7ec;
       --grid-light: #eef0f3;
-      --hairline: #edeff2;
+      --hairline: #c2c8d2;
       --head: #ffffff;
       --common: #f6f7f9;
       --break: #eaf6ef;
@@ -108,6 +108,7 @@
     }
 
     .table-wrap {
+      position: relative;
       background: var(--paper);
       border: 1px solid var(--hairline);
       border-radius: var(--radius);
@@ -207,6 +208,7 @@
     td.session.th-voice    { background: #c4e6f6; color: #0369a1; }
 
     .talk {
+      position: relative;
       padding: 12px 13px;
     }
 
@@ -216,6 +218,7 @@
       line-height: 1.3;
       letter-spacing: -.005em;
       margin-bottom: 6px;
+      padding-right: 22px;
     }
 
     .who {
@@ -397,6 +400,97 @@
       color: #15803d;
       border-color: #c7e7d2;
       background: #f1faf4;
+    }
+
+    /* Текущее время по Белграду: заливка шкалы + яркая линия «сейчас» (оверлей) */
+    #now-fill {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 0;
+      height: 0;
+      background: rgba(37, 99, 235, .15);
+      pointer-events: none;
+      z-index: 1;
+      display: none;
+      transition: height .6s linear, width .2s ease;
+    }
+
+    #now-line {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      border-top: 2px solid #1d4ed8;
+      pointer-events: none;
+      z-index: 1;
+      display: none;
+      transition: top .6s linear;
+    }
+
+    #now-line::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: -5px;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #1d4ed8;
+      box-shadow: 0 0 0 3px rgba(29, 78, 216, .18);
+    }
+
+    /* Галочка «отметить» в углу карточки — чистый оверлей, не двигает вёрстку */
+    .talk-check {
+      position: absolute;
+      top: 7px;
+      right: 7px;
+      width: 18px;
+      height: 18px;
+      padding: 0;
+      border: 1.5px solid #c2c8d2;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, .72);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 2;
+      transition: background .15s ease, border-color .15s ease, transform .12s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .talk-check svg {
+      width: 11px;
+      height: 11px;
+      fill: none;
+      stroke: #b5bcc8;
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      transition: stroke .15s ease;
+    }
+
+    .talk-check:hover {
+      border-color: #16a34a;
+    }
+
+    .talk-check:hover svg {
+      stroke: #16a34a;
+    }
+
+    .talk-check.checked {
+      background: #16a34a;
+      border-color: #16a34a;
+      box-shadow: 0 1px 5px rgba(22, 163, 74, .45);
+    }
+
+    .talk-check.checked svg {
+      stroke: #fff;
+    }
+
+    .talk-check:active {
+      transform: scale(.9);
     }
 
     @media print {
@@ -612,6 +706,18 @@
       .rec-toggle {
         font-size: 11px;
         padding: 5px 12px 5px 8px;
+      }
+
+      .talk-check {
+        width: 16px;
+        height: 16px;
+        top: 5px;
+        right: 5px;
+      }
+
+      .talk-check svg {
+        width: 10px;
+        height: 10px;
       }
 
       table {
@@ -1345,6 +1451,115 @@
         var s2 = tr.querySelector('td.stage2');
         if (s1 && cur[0]) s1.classList.add(cur[0]);
         if (s2 && cur[1]) s2.classList.add(cur[1]);
+      });
+    })();
+
+    // Текущее время по Белграду: заливаем шкалу и ставим линию «сейчас».
+    // Чисто оверлей внутри .table-wrap — на раскладку таблицы не влияет.
+    (function () {
+      var wrap = document.querySelector('.table-wrap');
+      var table = wrap ? wrap.querySelector('table') : null;
+      if (!wrap || !table) return;
+
+      var fill = document.createElement('div');
+      fill.id = 'now-fill';
+      var line = document.createElement('div');
+      line.id = 'now-line';
+      wrap.appendChild(fill);
+      wrap.appendChild(line);
+
+      function belgradeMinutes() {
+        var parts = new Intl.DateTimeFormat('en-GB', {
+          timeZone: 'Europe/Belgrade', hour: '2-digit', minute: '2-digit', hour12: false
+        }).formatToParts(new Date());
+        var h = 0, m = 0;
+        parts.forEach(function (p) {
+          if (p.type === 'hour') h = parseInt(p.value, 10);
+          if (p.type === 'minute') m = parseInt(p.value, 10);
+        });
+        return h * 60 + m;
+      }
+
+      function anchors() {
+        var list = [];
+        var seen = {};
+        var wrapTop = wrap.getBoundingClientRect().top;
+        var rows = table.querySelectorAll('tbody tr');
+        Array.prototype.forEach.call(rows, function (tr) {
+          var th = tr.querySelector('th.time');
+          if (!th) return;
+          var mt = th.textContent.match(/(\d{1,2}):(\d{2})/);
+          if (!mt) return;
+          var min = parseInt(mt[1], 10) * 60 + parseInt(mt[2], 10);
+          if (seen[min]) return;            // дедуп: плашка секции и первый доклад с тем же стартом
+          seen[min] = true;
+          list.push({ min: min, y: tr.getBoundingClientRect().top - wrapTop });
+        });
+        return list;
+      }
+
+      function update() {
+        var a = anchors();
+        if (a.length < 2) return;
+        var cur = belgradeMinutes();
+        var first = a[0], last = a[a.length - 1];
+        var timeCell = table.querySelector('th.time');
+        var colW = timeCell ? timeCell.offsetWidth : 80;
+
+        if (cur < first.min) {              // событие ещё не началось — ничего не показываем
+          fill.style.display = 'none';
+          line.style.display = 'none';
+          return;
+        }
+
+        var y;
+        if (cur >= last.min) {
+          y = last.y;
+        } else {
+          for (var i = 0; i < a.length - 1; i++) {
+            if (cur >= a[i].min && cur < a[i + 1].min) {
+              var f = (cur - a[i].min) / (a[i + 1].min - a[i].min);
+              y = a[i].y + f * (a[i + 1].y - a[i].y);
+              break;
+            }
+          }
+        }
+
+        fill.style.display = 'block';
+        fill.style.width = colW + 'px';
+        fill.style.height = Math.max(0, y) + 'px';
+        line.style.display = 'block';
+        line.style.top = y + 'px';
+      }
+
+      update();
+      window.addEventListener('resize', update);
+      setInterval(update, 30000);
+    })();
+
+    // Галочки «отметить лекцию» в углу карточек. Состояние сохраняется только
+    // в этом браузере (localStorage) — при шеринге файла другой человек их не увидит.
+    (function () {
+      var SVG = '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+      var talks = document.querySelectorAll('.talk');
+      var store;
+      try { store = JSON.parse(localStorage.getItem('lorebaseChecks') || '{}'); } catch (e) { store = {}; }
+      function save() {
+        try { localStorage.setItem('lorebaseChecks', JSON.stringify(store)); } catch (e) {}
+      }
+      Array.prototype.forEach.call(talks, function (talk, i) {
+        var key = 'c' + i;
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'talk-check';
+        btn.setAttribute('aria-label', 'Отметить лекцию');
+        btn.innerHTML = SVG;
+        if (store[key]) btn.classList.add('checked');
+        btn.addEventListener('click', function () {
+          if (btn.classList.toggle('checked')) store[key] = 1; else delete store[key];
+          save();
+        });
+        talk.appendChild(btn);
       });
     })();
   </script>
