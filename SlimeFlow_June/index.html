@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en-us">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Slime Flow</title>
+  <link rel="stylesheet" href="TemplateData/style.css">
+
+  <script>
+    // Poki: грузим движок GamePush только из локального бандла, без запросов на eponesh.com.
+    window.__GS_BOOT_CFG__ = { sdkSrc: 'TemplateData/gp_bundle/gamepush.js' };
+    const overlayBackgroundColor = "";
+    const progressBarFillColor = "";
+    const progressBarBackgroundColor = "";
+    const progressBarBorderColor = "";
+    const backgroundFileName = "";
+  </script>
+
+<style>
+  /* Убираем выделение по нажатию клавиш */
+  canvas:focus {
+      outline: none;
+  }
+
+  html, body {
+      /* Убираем отступы */
+      padding: 0;
+      margin: 0;
+      /* Отключаем скролл и лонгтап на IOS */
+      overflow: hidden;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      -khtml-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+      -webkit-tap-highlight-color: rgba(0,0,0,0);
+      /* Ставим высоту на 100% */
+      height: 100%;
+  }
+</style>
+
+</head>
+
+<body class="dark">
+  <div id="unity-container" class="unity-desktop">
+    <canvas id="unity-canvas"></canvas>
+  </div>
+  <div id="loading-cover" style="display:none;">
+    <!-- Адаптивный фон: горизонтальный арт на десктопе, вертикальный в портрете -->
+    <div class="loading-bg loading-bg--landscape"></div>
+    <div class="loading-bg loading-bg--portrait"></div>
+
+    <!-- Поднимающиеся пузырьки поверх фона — оживляют экран -->
+    <div class="bubbles" aria-hidden="true">
+      <span class="bubble" style="--size:54px; --x:8%;  --dur:9s;  --delay:0s;   --drift:24px"></span>
+      <span class="bubble" style="--size:30px; --x:20%; --dur:7s;  --delay:2.4s; --drift:-18px"></span>
+      <span class="bubble" style="--size:80px; --x:33%; --dur:12s; --delay:1.2s; --drift:30px"></span>
+      <span class="bubble" style="--size:22px; --x:46%; --dur:6.5s;--delay:3.6s; --drift:-12px"></span>
+      <span class="bubble" style="--size:46px; --x:58%; --dur:8.5s;--delay:0.6s; --drift:20px"></span>
+      <span class="bubble" style="--size:64px; --x:72%; --dur:11s; --delay:2.8s; --drift:-28px"></span>
+      <span class="bubble" style="--size:34px; --x:84%; --dur:7.5s;--delay:1.8s; --drift:16px"></span>
+      <span class="bubble" style="--size:26px; --x:93%; --dur:6.8s;--delay:4.2s; --drift:-14px"></span>
+    </div>
+
+    <div id="unity-loading-bar">
+      <div id="unity-logo"><img src="logo.png" alt=""></div>
+      <div id="unity-progress-bar-empty" class="progress-capsule">
+        <div id="unity-progress-bar-full"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const buildUrl = "Build";
+    const loaderUrl = buildUrl + "/WebBuild_June.loader.js";
+    const config = {
+      dataUrl: buildUrl + "/WebBuild_June.data.unityweb",
+      workerUrl: buildUrl + "/WebBuild_June.data.unityweb",
+      frameworkUrl: buildUrl + "/WebBuild_June.framework.js.unityweb",
+      codeUrl: buildUrl + "/WebBuild_June.wasm.unityweb",
+      // #if MEMORY_FILENAME
+      //   memoryUrl: buildUrl + "/",
+      // #endif
+      // #if SYMBOLS_FILENAME
+      //   symbolsUrl: buildUrl + "/",
+      // #endif
+      streamingAssetsUrl: "StreamingAssets",
+      companyName: "Eccentric Games",
+      productName: "Slime Flow",
+      productVersion: "0.1.13",
+    };
+
+    const container = document.querySelector("#unity-container");
+    const canvas = document.querySelector("#unity-canvas");
+    const loadingCover = document.querySelector("#loading-cover");
+    const progressBarFull = document.querySelector("#unity-progress-bar-full");
+
+    // Цвета прогресс-бара/фона из настроек шаблона намеренно не применяем —
+    // у нас собственное оформление в стиле игры (style.css).
+
+    if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+      container.className = "unity-mobile";
+    }
+
+    // #if BACKGROUND_FILENAME
+    // canvas.style.background = "url('" + buildUrl + "/') center / cover";
+    // #endif
+
+    loadingCover.style.display = "";
+
+        // Выключаем появление меню при правом клике мыши
+        document.addEventListener('contextmenu', event => event.preventDefault());
+
+        // Возвращаем фокус, если кликнули по экрану
+        function FocusGame() {
+            window.focus();
+            canvas.focus();
+        }
+
+        window.addEventListener('pointerdown', () => {
+            FocusGame();
+        });
+        window.addEventListener('touchstart', () => {
+            FocusGame();
+        });
+
+    const unityLoader = document.createElement("script");
+    unityLoader.src = loaderUrl;
+    unityLoader.onload = async () => {
+      createUnityInstance(canvas, config, (progress) => {
+        progressBarFull.style.width = `${100 * progress}%`;
+      }).then((unityInstance) => {
+        window.unityInstance = unityInstance;
+        loadingCover.style.display = "none";
+      }).catch((message) => {
+        alert(message);
+      });
+    };
+    document.body.appendChild(unityLoader);
+
+    document.addEventListener("pointerdown", () => {
+      container.focus();
+      window.focus();
+      canvas.focus();
+    });
+
+  </script>
+</body>
+
+</html>

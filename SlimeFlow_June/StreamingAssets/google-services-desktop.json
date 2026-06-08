@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "553949251996",
+    "project_id": "slime-flow-b5577",
+    "storage_bucket": "slime-flow-b5577.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:553949251996:android:384c5adbf9a67ab6536059",
+        "android_client_info": {
+          "package_name": "com.slime.flow.color.puzzle"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDCd8jrZeLDYGwRskPwrv9sq4eiw6NUcU0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
