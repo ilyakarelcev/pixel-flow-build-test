@@ -65,20 +65,24 @@
 - После правки прогони автотесты на стенде (или `node run-tests.js`) и добавь
   новый кейс в `js/tests.js`.
 
-## Перенос в Unity (следующий этап)
+## Unity-ассет (готов)
 
-`filter.js` написан под перенос в C# почти 1:1: только операции над
-строками/массивами (`indexOf`, посимвольные циклы), никаких regex и
-JS-специфики → IL2CPP/WebGL-safe. План:
+Папка `unity/ProfanityFilter/` — drop-in ассет: C#-порт ядра (1:1 с
+`filter.js`, без regex и UnityEngine-зависимостей в ядре), обёртка
+`ChatProfanityFilter.Censor(...)`, словари в `Resources/ProfanityFilter/*.txt`
+и EditMode-тесты. Инструкция — `unity/ProfanityFilter/README.md`.
 
-- `ProfanityFilter.cs`: `bool IsProfane(string)`, `string Censor(string)` —
-  порт `normalizeText` / `runPass` / `censorBySpans`.
-- Данные — в `Resources`/`StreamingAssets` как JSON или простой текст
-  (структура та же: alphabet, digraphs, charMap, roots, whitelist).
-  `data-*.js` — это готовый JSON c обёрткой в одну строку.
-- Фильтровать в обе стороны: при отправке и при отображении входящих
-  (страховка от старых билдов и любых обходов фильтра ввода).
-- Компиляцию данных (`compilePass`) делать один раз при старте.
+Поддержка синхронности стенда и ассета:
+
+- **Источник правды — JS-словари стенда** (`js/data-*.js`). После их правки
+  выполните `node export-unity-data.js`: перегенерирует `.txt` словари ассета
+  и C#-файл тест-кейсов из `tests.js` + `stress-corpus.js`.
+- **Проверка C#-порта без Unity**: `unity-dev/build-and-test.cmd` — собирает
+  ядро системным csc и гоняет весь корпус (тот же, что на стенде).
+- **Кнопка «⬇ Ассет для Unity» в шапке стенда** отдаёт
+  `ProfanityFilter-Unity.zip`. После правки словарей/кода ассета пересоберите
+  архив: `Compress-Archive -Path unity\ProfanityFilter -DestinationPath ProfanityFilter-Unity.zip -Force`
+  (PowerShell, из папки `chat-filter`).
 
 ## Производительность
 

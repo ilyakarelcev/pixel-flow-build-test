@@ -1,0 +1,21 @@
+# Словарь фильтра мата (de). Формат описан в README ассета.
+# Файл сгенерирован из js/data-de.js стенда — правьте либо там и
+# перегенерируйте (node export-unity-data.js), либо прямо здесь.
+lang=de
+alphabet=abcdefghijklmnopqrstuvwxyz
+wildcards=*#
+
+[charMap]
+ä=a
+ö=o
+ü=u
+ß=s
+
+[roots]
+fick
+scheiss
+arsch
+fotze
+hure
+schlampe
+wichs
