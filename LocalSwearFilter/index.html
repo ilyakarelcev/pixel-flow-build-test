@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>МатФильтр — тестовый стенд Doodle Obby</title>
+<style>
+  :root {
+    --ink: #25243a;
+    --muted: #8a88a3;
+    --line: #e8e7f3;
+    --good: #0ea371;
+    --good-bg: #e5f8f0;
+    --bad: #d63031;
+    --bad-bg: #fdecec;
+    --accent: #6c5ce7;
+    --accent-soft: #efedff;
+    --card: #ffffff;
+    --bg: #f6f5fc;
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--bg); }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    color: var(--ink);
+    line-height: 1.55;
+    background:
+      radial-gradient(800px 300px at 15% -5%, #e8e4ff 0%, transparent 60%),
+      radial-gradient(700px 280px at 90% 0%, #dff3ec 0%, transparent 55%),
+      var(--bg);
+    min-height: 100vh;
+  }
+  main { max-width: 1180px; margin: 0 auto; padding: 36px 24px 72px; }
+
+  /* ── Шапка ── */
+  .hero { display: flex; align-items: center; gap: 18px; margin-bottom: 26px; }
+  .hero-emoji {
+    font-size: 44px; background: var(--card); border-radius: 18px;
+    width: 76px; height: 76px; display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 6px 24px rgba(108, 92, 231, .14);
+  }
+  .hero h1 { font-size: 28px; margin: 0; letter-spacing: -0.4px; }
+  .hero h1 .thin { font-weight: 400; color: var(--muted); }
+  .tagline { margin: 4px 0 0; color: var(--muted); font-size: 14.5px; max-width: 640px; }
+  .hero-badges { margin-left: auto; display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
+  .badge {
+    font-size: 12px; background: var(--card); border: 1px solid var(--line);
+    border-radius: 999px; padding: 3px 12px; color: var(--muted); white-space: nowrap;
+  }
+  .badge b { color: var(--accent); font-weight: 600; }
+
+  /* ── Сетка и карточки ── */
+  .grid { display: grid; grid-template-columns: 1.25fr 1fr; gap: 20px; align-items: start; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+  .card {
+    background: var(--card); border-radius: 18px; padding: 22px 24px;
+    box-shadow: 0 2px 16px rgba(37, 36, 58, .06);
+    margin-bottom: 20px;
+  }
+  .card h2 {
+    font-size: 12.5px; text-transform: uppercase; letter-spacing: 1.4px;
+    color: var(--muted); margin: 0 0 14px; font-weight: 700;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card h2 .h2-emoji { font-size: 16px; }
+
+  /* ── Поле проверки ── */
+  textarea, input[type="text"] {
+    width: 100%; font: inherit; color: inherit;
+    border: 1.5px solid var(--line); border-radius: 12px;
+    padding: 12px 14px; outline: none; background: #fcfcff;
+    transition: border-color .15s;
+  }
+  textarea:focus, input[type="text"]:focus { border-color: var(--accent); }
+  textarea { resize: none; overflow: hidden; min-height: 92px; display: block; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
+  .chips-label { font-size: 12.5px; color: var(--muted); width: 100%; margin-bottom: -2px; }
+  .chip {
+    font: inherit; font-size: 13px; border: 1px solid var(--line); background: #fcfcff;
+    border-radius: 999px; padding: 4px 13px; cursor: pointer; color: var(--ink);
+    transition: all .12s;
+  }
+  .chip:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+
+  #live-result { margin-top: 16px; }
+  .verdict {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-weight: 700; font-size: 15px; border-radius: 999px; padding: 6px 16px;
+  }
+  .verdict.good { color: var(--good); background: var(--good-bg); }
+  .verdict.bad { color: var(--bad); background: var(--bad-bg); }
+  .row { margin: 6px 0; }
+  .row.small { font-size: 13px; color: var(--muted); }
+  .label { color: var(--muted); font-size: 13px; }
+  .row.compare { margin: 12px 0; }
+  .cmp-text {
+    margin-top: 4px; padding: 10px 13px; background: #f8f7fd;
+    border: 1px solid var(--line);
+    border-radius: 12px; white-space: pre-wrap; word-break: break-word;
+    font-size: 14.5px;
+  }
+  .censored { font-weight: 600; }
+  mark.hit {
+    background: #fbd9d3; color: #a52a1a; border-radius: 4px;
+    padding: 0 2px; font-weight: 700; cursor: help;
+  }
+  .muted { color: var(--muted); }
+  code {
+    background: #f3f2fa; border-radius: 5px; padding: 1px 6px;
+    font-size: 12.5px;
+  }
+  details.debug { margin-top: 12px; font-size: 13px; }
+  details.debug summary { cursor: pointer; color: var(--muted); }
+
+  /* ── Чат ── */
+  #chat-list {
+    height: 340px; overflow-y: auto; padding: 12px;
+    background: linear-gradient(180deg, #f3f1fc 0%, #f8f7fd 100%);
+    border: 1px solid var(--line); border-radius: 14px;
+    margin-bottom: 12px; font-size: 14px;
+  }
+  .chat-empty { color: var(--muted); font-size: 13.5px; text-align: center; margin-top: 130px; }
+  .msg { display: flex; justify-content: flex-end; margin: 8px 0; }
+  .msg-inner { max-width: 88%; }
+  .msg .nick { font-size: 11px; color: var(--muted); text-align: right; margin: 0 6px 2px 0; }
+  .msg .bubble {
+    background: var(--accent); color: #fff;
+    border-radius: 14px 14px 4px 14px; padding: 8px 13px;
+    word-break: break-word; cursor: default;
+  }
+  .msg.filtered .bubble { background: #b6aff2; }
+  .msg .flag {
+    display: block; font-size: 11px; color: var(--bad);
+    text-align: right; margin: 3px 6px 0 0;
+  }
+  .chat-row { display: flex; gap: 8px; }
+  .chat-row input { flex: 1; }
+  button.primary {
+    font: inherit; border: none; background: var(--accent); color: #fff;
+    border-radius: 12px; padding: 10px 20px; cursor: pointer; font-weight: 600;
+    transition: filter .12s;
+  }
+  button.primary:hover { filter: brightness(1.08); }
+  .chat-hint { font-size: 12.5px; color: var(--muted); margin: 10px 2px 0; }
+
+  /* ── Тесты ── */
+  .tests-controls { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+  .tests-controls label { font-size: 14px; color: var(--muted); cursor: pointer; user-select: none; }
+  #tests-summary { margin: 14px 0 4px; font-weight: 700; font-size: 16px; }
+  .tests-good { color: var(--good); }
+  .tests-bad { color: var(--bad); }
+  table {
+    width: 100%; border-collapse: collapse; font-size: 13px;
+    display: none; margin-top: 10px;
+  }
+  th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .6px; }
+  tr.fail td { background: var(--bad-bg); }
+  tr.ok td:first-child { color: var(--good); }
+  tr.fail td:first-child { color: var(--bad); }
+  td .note { color: var(--muted); font-size: 12px; }
+
+  footer {
+    margin-top: 8px; font-size: 13px; color: var(--muted);
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+<main>
+  <header class="hero">
+    <div class="hero-emoji">🧼</div>
+    <div>
+      <h1>МатФильтр <span class="thin">· стенд Doodle Obby</span></h1>
+      <p class="tagline">
+        Попробуй пронести мат мимо фильтра: пробелы, точки, цифры, латиница,
+        звёздочки, транслит. Фильтр видел всякое — но вдруг ты особенный.
+      </p>
+    </div>
+    <div class="hero-badges">
+      <span class="badge"><b>RU · EN</b> подробно &nbsp;·&nbsp; DE ES TR JA базово</span>
+      <span class="badge">локально, без сервера &nbsp;·&nbsp; ~0.02 мс на сообщение</span>
+    </div>
+  </header>
+
+  <div class="grid">
+    <section class="card">
+      <h2><span class="h2-emoji">🔬</span> Проверка текста</h2>
+      <textarea id="live-input" rows="3"
+        placeholder="Вставь сюда что угодно: сообщение, чат-лог, поэму, хитрый обход…"></textarea>
+      <div class="chips" id="chips">
+        <span class="chips-label">Или ткни готовый пример:</span>
+        <button class="chip" data-text="б л я д ь">б л я д ь</button>
+        <button class="chip" data-text="cyka blyat">cyka blyat</button>
+        <button class="chip" data-text="пи3дец">пи3дец</button>
+        <button class="chip" data-text="бл*дь">бл*дь</button>
+        <button class="chip" data-text="иди нах">иди нах</button>
+        <button class="chip" data-text="3.14здец">3.14здец</button>
+        <button class="chip" data-text="ТЫ ЧЁ БЛИН">ТЫ ЧЁ БЛИН ✓чисто</button>
+        <button class="chip" data-text="застрахуй команду">застрахуй команду ✓чисто</button>
+      </div>
+      <div id="live-result"></div>
+    </section>
+
+    <section class="card">
+      <h2><span class="h2-emoji">💬</span> Чат как в игре</h2>
+      <div id="chat-list"></div>
+      <div class="chat-row">
+        <input type="text" id="chat-input" placeholder="Сообщение в чат…" maxlength="200">
+        <button id="chat-send" class="primary">➤</button>
+      </div>
+      <p class="chat-hint">
+        Так сообщение увидят другие игроки. Фильтр работает в обе стороны —
+        мат не отрисуется, даже если у отправителя старый билд. Наведи на пузырь,
+        чтобы увидеть, что было написано на самом деле.
+      </p>
+    </section>
+  </div>
+
+  <section class="card">
+    <h2><span class="h2-emoji">🧪</span> Автотесты</h2>
+    <div class="tests-controls">
+      <button id="tests-run" class="primary">Прогнать тесты</button>
+      <label><input type="checkbox" id="tests-show-all"> показать все кейсы</label>
+      <span class="muted" style="font-size:13px">мат + обходы + чистые фразы, на которых фильтр уже обжигался</span>
+    </div>
+    <div id="tests-summary"></div>
+    <table id="tests-table">
+      <thead>
+        <tr><th></th><th>Сообщение</th><th>Ожидали</th><th>Получили</th><th>На экране</th></tr>
+      </thead>
+      <tbody id="tests-table-body"></tbody>
+    </table>
+  </section>
+
+  <footer>
+    Нашёл обход или ложное срабатывание — кидай в чат команды 🧤
+    Словари: <code>js/data-ru.js</code>, <code>js/data-en.js</code> (+ de/es/tr/ja) · логика: <code>js/filter.js</code> · дальше — порт в Unity C#
+  </footer>
+</main>
+
+<script src="js/data-ru.js?v=4"></script>
+<script src="js/data-en.js?v=4"></script>
+<script src="js/data-de.js?v=4"></script>
+<script src="js/data-es.js?v=4"></script>
+<script src="js/data-tr.js?v=4"></script>
+<script src="js/data-ja.js?v=4"></script>
+<script src="js/filter.js?v=4"></script>
+<script src="js/tests.js?v=4"></script>
+<script src="js/stress-corpus.js?v=4"></script>
+<script src="js/app.js?v=4"></script>
+</body>
+</html>
