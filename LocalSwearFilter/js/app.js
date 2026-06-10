@@ -7,6 +7,16 @@ var filter = createProfanityFilter([
   FILTER_DATA_DE, FILTER_DATA_ES, FILTER_DATA_TR, FILTER_DATA_JA
 ]);
 
+var DEFAULT_TEXT = [
+  "Вася: бляяяя сyka кто опять эту Х У Й Н Ю нажал я щас сгорю наxуй",
+  "Петя: ты нажал е6лан я ВИДЕЛ ты своим кривым пальцем тыкал лол",
+  "Вася: нихyя я не тыкал ты сам там прыгал как обocpaнный NOOB",
+  "Петя: да иди н,а,х,у,й у меня LAG был я не виноват сyкa",
+  "Вася: lag у него бл9ть, у тебя МОЗГИ lag, а не игра, ало",
+  "Петя: сам ты лаганый кусок г0вна ты ХИЛКУ сожрал и умер как бот",
+  "Вася: я умер потому что ты меня пушкой eбнул, придyрок"
+].join("\n");
+
 // Подмешиваем жёсткую стресс-базу (stress-corpus.js) к основным тестам, чтобы
 // кнопка «Прогнать тесты» гоняла и её. FILTER_GREYZONE не добавляем — у её
 // кейсов нет поля profane, это отдельный информативный список.
@@ -79,34 +89,33 @@ function renderLive() {
   var text = $("live-input").value;
   var box = $("live-result");
   if (!text.trim()) {
-    box.innerHTML = '<div class="muted">Начни печатать — результат появится сразу.</div>';
+    box.innerHTML = '<div class="scan-empty">Начни печатать — здесь появится разбор.</div>';
     return;
   }
   var r = filter.explain(text);
   var html = "";
   var merged0 = r.profane ? mergeHitSpans(r.hits) : [];
-  html += '<div class="verdict ' + (r.profane ? "bad" : "good") + '">' +
+  html += '<div class="scan-summary"><div class="verdict ' + (r.profane ? "bad" : "good") + '">' +
     (r.profane
-      ? "🚫 Поймано: " + merged0.length + " " + plural(merged0.length, "участок", "участка", "участков")
-      : "✅ Чисто — пройдёт как есть") +
-    "</div>";
+      ? "Заблокировано: " + merged0.length + " " + plural(merged0.length, "участок", "участка", "участков")
+      : "Чисто: пройдет как есть") +
+    '</div><div class="scan-count">' + r.hits.length + " " + plural(r.hits.length, "совпадение", "совпадения", "совпадений") + '</div></div>';
+  html += '<div class="scan-flow">';
+
+  html += '<div class="flow-step"><div class="flow-label"><span>исходник</span><span>как написал игрок</span></div><div class="cmp-text">' +
+    (r.profane ? renderHighlighted(text, merged0) : escapeHtml(text)) + "</div></div>";
+
   if (r.profane) {
     var merged = merged0;
-    html += '<div class="row compare"><span class="label">Что зацензурится:</span><div class="cmp-text">' +
-      renderHighlighted(text, merged) + "</div></div>";
-    html += '<div class="row compare"><span class="label">На экране у игроков:</span><div class="cmp-text censored">' +
+    html += '<div class="flow-step"><div class="flow-label"><span>маска</span><span>как увидят игроки</span></div><div class="cmp-text censored">' +
       renderHighlighted(r.censored, merged) + "</div></div>";
   } else {
-    html += '<div class="row compare"><span class="label">На экране у игроков:</span><div class="cmp-text">' +
+    html += '<div class="flow-step"><div class="flow-label"><span>маска</span><span>не нужна</span></div><div class="cmp-text">' +
       escapeHtml(r.censored) + "</div></div>";
   }
+  html += "</div>";
 
   var details = "";
-  for (var i = 0; i < r.passes.length; i++) {
-    var p = r.passes[i];
-    details += '<div class="row small"><span class="label">' + p.lang.toUpperCase() +
-      " нормализация:</span> <code>" + escapeHtml(p.normalized || "—") + "</code></div>";
-  }
   if (r.hits.length) {
     var roots = [];
     for (var j = 0; j < r.hits.length; j++) {
@@ -115,7 +124,7 @@ function renderLive() {
     details += '<div class="row small"><span class="label">Сработавшие корни:</span> ' +
       escapeHtml(roots.join(", ")) + "</div>";
   }
-  html += '<details class="debug"><summary>Отладка</summary>' + details + "</details>";
+  if (details) html += '<details class="debug"><summary>Сработавшие корни</summary>' + details + "</details>";
   box.innerHTML = html;
 }
 
@@ -134,12 +143,21 @@ function sendChat() {
   item.innerHTML = '<div class="msg-inner">' +
     '<div class="nick">' + escapeHtml(chatNick) + "</div>" +
     '<div class="bubble" title="Написано было: ' + escapeHtml(text) + '">' + escapeHtml(r.censored) + "</div>" +
-    (r.profane ? '<span class="flag">🧼 отмыто фильтром</span>' : "") +
+    (r.profane ? '<span class="flag">замаскировано фильтром</span>' : "") +
     "</div>";
   list.appendChild(item);
   list.scrollTop = list.scrollHeight;
   input.value = "";
   input.focus();
+}
+
+function openChat() {
+  $("chat-widget").classList.add("open");
+  $("chat-input").focus();
+}
+
+function closeChat() {
+  $("chat-widget").classList.remove("open");
 }
 
 // ── Автотесты ───────────────────────────────────────────────────────────────
@@ -172,8 +190,15 @@ function runTestsUI() {
 
 document.addEventListener("DOMContentLoaded", function () {
   var live = $("live-input");
+  live.value = DEFAULT_TEXT;
   live.addEventListener("input", function () { autosize(live); renderLive(); });
   autosize(live);
+  $("clear-input").addEventListener("click", function () {
+    live.value = "";
+    autosize(live);
+    renderLive();
+    live.focus();
+  });
 
   // чипы с готовыми примерами
   var chips = document.querySelectorAll("#chips .chip");
@@ -186,7 +211,13 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  $("chat-list").innerHTML = '<div class="chat-empty">Тут пусто.<br>Напиши что-нибудь культурное.<br>Или некультурное — мы как раз это и проверяем.</div>';
+  $("chat-list").innerHTML = '<div class="chat-empty">Пустой чат.<br>Отправь фразу и посмотри, что дойдет до игроков.</div>';
+  $("chat-toggle").addEventListener("click", function () {
+    var widget = $("chat-widget");
+    if (widget.classList.contains("open")) closeChat();
+    else openChat();
+  });
+  $("chat-close").addEventListener("click", closeChat);
   $("chat-send").addEventListener("click", sendChat);
   $("chat-input").addEventListener("keydown", function (e) {
     if (e.key === "Enter") sendChat();

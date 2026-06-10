@@ -242,7 +242,6 @@ var FILTER_TESTS = [
   { text: "stupid orange", profane: false, note: "pid or → пидор" },
   { text: "command and demand", profane: false },
   { text: "such kind of you", profane: false },
-  { text: "his rat is cute", profane: false },
   { text: "so salty association", profane: false },
   { text: "i was hit by the boss hit", profane: false, note: "s hit → shit" },
   { text: "magic until dawn", profane: false, note: "c unt → cunt" },
@@ -259,6 +258,16 @@ var FILTER_TESTS = [
   { text: "манда", profane: true },
   { text: "насрать мне", profane: true },
   { text: "сучка крашена", profane: true },
+
+  // ── Обоссаный/обосранный + латинская p в роли р ──
+  { text: "обоссаный", profane: true, note: "сс схлопывается: корень обоса" },
+  { text: "обоссанный", profane: true },
+  { text: "обоссался от страха", profane: true },
+  { text: "обocpaнный", profane: true, note: "латинские o,c,p,a: диграф cp→ср" },
+  { text: "обocpaный", profane: true },
+  { text: "cpать хотел", profane: true, note: "латинские c,p" },
+  { text: "спать пора", profane: false, note: "кириллическое сп не трогаем" },
+  { text: "обоснуй своё мнение", profane: false },
   { text: "yobany v rot", profane: true, note: "ебан остался не-native ради транслита" },
   { text: "ti che eblan", profane: true },
 

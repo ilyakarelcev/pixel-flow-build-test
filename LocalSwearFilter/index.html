@@ -3,267 +3,725 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>МатФильтр — тестовый стенд Doodle Obby</title>
+<title>Eccentric Фильтр мата</title>
 <style>
   :root {
-    --ink: #25243a;
-    --muted: #8a88a3;
-    --line: #e8e7f3;
-    --good: #0ea371;
-    --good-bg: #e5f8f0;
-    --bad: #d63031;
-    --bad-bg: #fdecec;
-    --accent: #6c5ce7;
-    --accent-soft: #efedff;
-    --card: #ffffff;
-    --bg: #f6f5fc;
+    --bg: #08111f;
+    --ink: #f7f3e9;
+    --muted: #9eabc3;
+    --muted-2: #687690;
+    --line: rgba(255, 255, 255, .12);
+    --panel: rgba(14, 25, 43, .86);
+    --blue: #243f74;
+    --blue-bright: #3b6fc8;
+    --yellow: #f5ad17;
+    --yellow-2: #ffd165;
+    --good: #54d6a1;
+    --good-bg: rgba(84, 214, 161, .13);
+    --bad: #ff725d;
+    --bad-bg: rgba(255, 114, 93, .15);
+    --shadow: 0 24px 80px rgba(0, 0, 0, .38);
   }
+
   * { box-sizing: border-box; }
   html { background: var(--bg); }
   body {
     margin: 0;
-    font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-    color: var(--ink);
-    line-height: 1.55;
-    background:
-      radial-gradient(800px 300px at 15% -5%, #e8e4ff 0%, transparent 60%),
-      radial-gradient(700px 280px at 90% 0%, #dff3ec 0%, transparent 55%),
-      var(--bg);
     min-height: 100vh;
+    font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    color: var(--ink);
+    line-height: 1.45;
+    letter-spacing: 0;
+    background:
+      linear-gradient(135deg, rgba(36, 63, 116, .78) 0%, rgba(8, 17, 31, 0) 42%),
+      linear-gradient(180deg, #0a1424 0%, #08111f 48%, #050a12 100%);
   }
-  main { max-width: 1180px; margin: 0 auto; padding: 36px 24px 72px; }
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
+    background-size: 42px 42px;
+    mask-image: linear-gradient(180deg, rgba(0,0,0,.95), rgba(0,0,0,.18));
+  }
+  body::after {
+    content: "#  *  .  /  @  3  1  $  _  -  +  x  y  a  ё  ш";
+    position: fixed;
+    right: -120px;
+    top: 18vh;
+    width: 520px;
+    transform: rotate(90deg);
+    color: rgba(255, 255, 255, .035);
+    font-size: 58px;
+    font-weight: 900;
+    letter-spacing: 18px;
+    white-space: nowrap;
+    pointer-events: none;
+  }
 
-  /* ── Шапка ── */
-  .hero { display: flex; align-items: center; gap: 18px; margin-bottom: 26px; }
-  .hero-emoji {
-    font-size: 44px; background: var(--card); border-radius: 18px;
-    width: 76px; height: 76px; display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 6px 24px rgba(108, 92, 231, .14);
+  main {
+    position: relative;
+    width: min(1040px, calc(100% - 32px));
+    margin: 0 auto;
+    padding: 22px 0 76px;
   }
-  .hero h1 { font-size: 28px; margin: 0; letter-spacing: -0.4px; }
-  .hero h1 .thin { font-weight: 400; color: var(--muted); }
-  .tagline { margin: 4px 0 0; color: var(--muted); font-size: 14.5px; max-width: 640px; }
-  .hero-badges { margin-left: auto; display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
-  .badge {
-    font-size: 12px; background: var(--card); border: 1px solid var(--line);
-    border-radius: 999px; padding: 3px 12px; color: var(--muted); white-space: nowrap;
-  }
-  .badge b { color: var(--accent); font-weight: 600; }
-  a.download {
-    display: flex; flex-direction: column; align-items: center; gap: 1px;
-    background: var(--accent); color: #fff; text-decoration: none;
-    font-weight: 700; font-size: 14.5px;
-    border-radius: 14px; padding: 9px 20px;
-    box-shadow: 0 6px 18px rgba(108, 92, 231, .35);
-    transition: filter .12s, transform .12s;
-  }
-  a.download:hover { filter: brightness(1.08); transform: translateY(-1px); }
-  a.download .dl-sub { font-size: 11px; font-weight: 400; opacity: .85; }
 
-  /* ── Сетка и карточки ── */
-  .grid { display: grid; grid-template-columns: 1.25fr 1fr; gap: 20px; align-items: start; }
-  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
-  .card {
-    background: var(--card); border-radius: 18px; padding: 22px 24px;
-    box-shadow: 0 2px 16px rgba(37, 36, 58, .06);
-    margin-bottom: 20px;
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 10px 0 24px;
   }
-  .card h2 {
-    font-size: 12.5px; text-transform: uppercase; letter-spacing: 1.4px;
-    color: var(--muted); margin: 0 0 14px; font-weight: 700;
-    display: flex; align-items: center; gap: 8px;
+  .brand {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    gap: 14px;
   }
-  .card h2 .h2-emoji { font-size: 16px; }
+  .brand-mark {
+    width: 42px;
+    height: 42px;
+    flex: 0 0 auto;
+    border-radius: 5px;
+    background: linear-gradient(145deg, var(--yellow-2), var(--yellow) 68%, #d98b00);
+    transform: rotate(-7deg);
+    box-shadow: 0 14px 24px rgba(0, 0, 0, .35), inset 0 1px 0 rgba(255,255,255,.35);
+    transition: transform .18s ease, box-shadow .18s ease;
+  }
+  .brand:hover .brand-mark,
+  .brand-mark:hover {
+    transform: rotate(0deg) scale(1.03);
+    box-shadow: 0 16px 30px rgba(245, 173, 23, .25), inset 0 1px 0 rgba(255,255,255,.45);
+  }
+  .brand-title {
+    display: grid;
+    gap: 1px;
+    color: var(--ink);
+    font-size: 16px;
+    line-height: .94;
+    font-weight: 950;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+  }
+  .brand-title span:nth-child(n+2) { color: var(--yellow); }
+  .download {
+    display: inline-flex;
+    align-items: center;
+    min-height: 38px;
+    padding: 9px 14px;
+    border-radius: 999px;
+    color: #15100a;
+    background: var(--yellow);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 850;
+    box-shadow: 0 10px 30px rgba(245, 173, 23, .28);
+    transition: transform .14s ease, filter .14s ease;
+  }
+  .download:hover { transform: translateY(-1px); filter: brightness(1.08); }
 
-  /* ── Поле проверки ── */
-  textarea, input[type="text"] {
-    width: 100%; font: inherit; color: inherit;
-    border: 1.5px solid var(--line); border-radius: 12px;
-    padding: 12px 14px; outline: none; background: #fcfcff;
-    transition: border-color .15s;
-  }
-  textarea:focus, input[type="text"]:focus { border-color: var(--accent); }
-  textarea { resize: none; overflow: hidden; min-height: 92px; display: block; }
-
-  .chips { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
-  .chips-label { font-size: 12.5px; color: var(--muted); width: 100%; margin-bottom: -2px; }
-  .chip {
-    font: inherit; font-size: 13px; border: 1px solid var(--line); background: #fcfcff;
-    border-radius: 999px; padding: 4px 13px; cursor: pointer; color: var(--ink);
-    transition: all .12s;
-  }
-  .chip:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
-
-  #live-result { margin-top: 16px; }
-  .verdict {
-    display: inline-flex; align-items: center; gap: 8px;
-    font-weight: 700; font-size: 15px; border-radius: 999px; padding: 6px 16px;
-  }
-  .verdict.good { color: var(--good); background: var(--good-bg); }
-  .verdict.bad { color: var(--bad); background: var(--bad-bg); }
-  .row { margin: 6px 0; }
-  .row.small { font-size: 13px; color: var(--muted); }
-  .label { color: var(--muted); font-size: 13px; }
-  .row.compare { margin: 12px 0; }
-  .cmp-text {
-    margin-top: 4px; padding: 10px 13px; background: #f8f7fd;
+  .panel {
     border: 1px solid var(--line);
-    border-radius: 12px; white-space: pre-wrap; word-break: break-word;
-    font-size: 14.5px;
+    border-radius: 8px;
+    background: var(--panel);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(18px);
   }
-  .censored { font-weight: 600; }
+  .scanner-panel {
+    position: relative;
+    overflow: hidden;
+    padding: 20px;
+  }
+  .scanner-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-top: 3px solid var(--yellow);
+    pointer-events: none;
+  }
+  .panel-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 14px;
+  }
+  .eyebrow {
+    margin: 0 0 3px;
+    color: var(--yellow-2);
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+  }
+  h1,
+  h2 {
+    margin: 0;
+    color: var(--ink);
+    font-size: 28px;
+    line-height: 1.06;
+    letter-spacing: 0;
+  }
+  .toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  textarea,
+  input[type="text"] {
+    width: 100%;
+    font: inherit;
+    color: var(--ink);
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 8px;
+    outline: none;
+    background: rgba(5, 10, 18, .68);
+    transition: border-color .14s ease, box-shadow .14s ease, background .14s ease;
+  }
+  textarea {
+    display: block;
+    min-height: 230px;
+    padding: 16px;
+    resize: none;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+    font-size: 17px;
+  }
+  input[type="text"] { min-height: 44px; padding: 11px 12px; }
+  textarea::placeholder,
+  input[type="text"]::placeholder { color: #65748f; }
+  textarea:focus,
+  input[type="text"]:focus {
+    border-color: rgba(245, 173, 23, .68);
+    background: rgba(5, 10, 18, .86);
+    box-shadow: 0 0 0 3px rgba(245, 173, 23, .12);
+  }
+
+  button.primary,
+  button.secondary {
+    min-height: 38px;
+    border-radius: 8px;
+    font: inherit;
+    font-weight: 900;
+    cursor: pointer;
+    transition: transform .12s ease, filter .12s ease, border-color .12s ease;
+  }
+  button.primary {
+    border: 0;
+    color: #120d07;
+    background: var(--yellow);
+  }
+  button.secondary {
+    border: 1px solid rgba(255,255,255,.14);
+    color: #dce5f7;
+    background: rgba(255,255,255,.045);
+    padding: 8px 12px;
+  }
+  button.primary:hover,
+  button.secondary:hover { transform: translateY(-1px); filter: brightness(1.08); }
+  button.secondary:hover { border-color: rgba(245, 173, 23, .6); }
+
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .chips-label {
+    width: 100%;
+    margin-bottom: -1px;
+    color: var(--muted-2);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+  }
+  .chip {
+    min-height: 32px;
+    padding: 5px 10px;
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 7px;
+    color: #dce5f7;
+    background: rgba(255,255,255,.045);
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    transition: transform .12s ease, border-color .12s ease, color .12s ease, background .12s ease;
+  }
+  .chip:hover {
+    transform: translateY(-1px);
+    border-color: rgba(245, 173, 23, .7);
+    color: #fff3cf;
+    background: rgba(245, 173, 23, .12);
+  }
+  #live-result { margin-top: 16px; }
+
+  .scan-empty {
+    display: grid;
+    min-height: 180px;
+    place-items: center;
+    border: 1px dashed rgba(255,255,255,.14);
+    border-radius: 8px;
+    color: var(--muted);
+    background: rgba(255,255,255,.026);
+    text-align: center;
+  }
+  .scan-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .verdict {
+    display: inline-flex;
+    align-items: center;
+    min-height: 38px;
+    padding: 8px 12px;
+    border-radius: 7px;
+    font-weight: 850;
+    font-size: 14px;
+  }
+  .verdict.good {
+    color: #d9ffed;
+    background: var(--good-bg);
+    border: 1px solid rgba(84, 214, 161, .35);
+  }
+  .verdict.bad {
+    color: #ffe5df;
+    background: var(--bad-bg);
+    border: 1px solid rgba(255, 114, 93, .36);
+  }
+  .scan-count {
+    color: var(--muted);
+    font-family: "SFMono-Regular", Consolas, monospace;
+    font-size: 12px;
+  }
+  .scan-flow {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .flow-step {
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 8px;
+    overflow: hidden;
+    background: rgba(255,255,255,.035);
+  }
+  .flow-label {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 10px 0;
+    color: var(--muted-2);
+    font-size: 11px;
+    font-weight: 850;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+  }
+  .cmp-text {
+    min-width: 0;
+    min-height: 42px;
+    max-height: 330px;
+    overflow: auto;
+    padding: 10px;
+    color: #f7f3e9;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    font-size: 15px;
+  }
+  .censored {
+    color: var(--yellow-2);
+    font-weight: 850;
+    letter-spacing: .02em;
+  }
   mark.hit {
-    background: #fbd9d3; color: #a52a1a; border-radius: 4px;
-    padding: 0 2px; font-weight: 700; cursor: help;
+    padding: 1px 3px;
+    border-radius: 4px;
+    color: #150b08;
+    background: var(--bad);
+    font-weight: 900;
+    cursor: help;
+  }
+  code {
+    color: #dce5f7;
+    background: rgba(255,255,255,.055);
+    border-radius: 5px;
+    padding: 1px 5px;
+    font-family: "SFMono-Regular", Consolas, monospace;
+    font-size: 12px;
   }
   .muted { color: var(--muted); }
-  code {
-    background: #f3f2fa; border-radius: 5px; padding: 1px 6px;
-    font-size: 12.5px;
+  .row { margin: 7px 0; }
+  .row.small { color: var(--muted); font-size: 12px; }
+  .label { color: var(--muted-2); }
+  details.debug {
+    margin-top: 12px;
+    color: var(--muted);
+    font-size: 12px;
   }
-  details.debug { margin-top: 12px; font-size: 13px; }
-  details.debug summary { cursor: pointer; color: var(--muted); }
+  details.debug summary {
+    width: fit-content;
+    cursor: pointer;
+    color: var(--muted);
+  }
 
-  /* ── Чат ── */
-  #chat-list {
-    height: 340px; overflow-y: auto; padding: 12px;
-    background: linear-gradient(180deg, #f3f1fc 0%, #f8f7fd 100%);
-    border: 1px solid var(--line); border-radius: 14px;
-    margin-bottom: 12px; font-size: 14px;
+  .tests-panel {
+    margin-top: 18px;
+    padding: 18px;
   }
-  .chat-empty { color: var(--muted); font-size: 13.5px; text-align: center; margin-top: 130px; }
-  .msg { display: flex; justify-content: flex-end; margin: 8px 0; }
-  .msg-inner { max-width: 88%; }
-  .msg .nick { font-size: 11px; color: var(--muted); text-align: right; margin: 0 6px 2px 0; }
-  .msg .bubble {
-    background: var(--accent); color: #fff;
-    border-radius: 14px 14px 4px 14px; padding: 8px 13px;
-    word-break: break-word; cursor: default;
+  .tests-controls {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-top: 14px;
   }
-  .msg.filtered .bubble { background: #b6aff2; }
-  .msg .flag {
-    display: block; font-size: 11px; color: var(--bad);
-    text-align: right; margin: 3px 6px 0 0;
+  .tests-controls label {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: var(--muted);
+    font-size: 13px;
+    cursor: pointer;
+    user-select: none;
   }
-  .chat-row { display: flex; gap: 8px; }
-  .chat-row input { flex: 1; }
-  button.primary {
-    font: inherit; border: none; background: var(--accent); color: #fff;
-    border-radius: 12px; padding: 10px 20px; cursor: pointer; font-weight: 600;
-    transition: filter .12s;
+  .tests-controls input { accent-color: var(--yellow); }
+  #tests-summary {
+    margin: 14px 0 6px;
+    font-size: 18px;
+    font-weight: 900;
   }
-  button.primary:hover { filter: brightness(1.08); }
-  .chat-hint { font-size: 12.5px; color: var(--muted); margin: 10px 2px 0; }
-
-  /* ── Тесты ── */
-  .tests-controls { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
-  .tests-controls label { font-size: 14px; color: var(--muted); cursor: pointer; user-select: none; }
-  #tests-summary { margin: 14px 0 4px; font-weight: 700; font-size: 16px; }
   .tests-good { color: var(--good); }
   .tests-bad { color: var(--bad); }
-  table {
-    width: 100%; border-collapse: collapse; font-size: 13px;
-    display: none; margin-top: 10px;
+  .table-wrap {
+    overflow: auto;
+    border-radius: 8px;
   }
-  th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
-  th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .6px; }
-  tr.fail td { background: var(--bad-bg); }
+  table {
+    display: none;
+    width: 100%;
+    min-width: 720px;
+    margin-top: 8px;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  th,
+  td {
+    padding: 9px 10px;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    color: var(--muted-2);
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+  tr.fail td { background: rgba(255, 114, 93, .09); }
   tr.ok td:first-child { color: var(--good); }
   tr.fail td:first-child { color: var(--bad); }
   td .note { color: var(--muted); font-size: 12px; }
 
-  footer {
-    margin-top: 8px; font-size: 13px; color: var(--muted);
+  .chat-widget {
+    position: fixed;
+    right: 22px;
+    bottom: 22px;
+    z-index: 20;
+  }
+  .chat-nudge {
+    position: absolute;
+    right: 76px;
+    bottom: 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--yellow-2);
+    font-size: 13px;
+    font-weight: 900;
+    text-transform: uppercase;
+    white-space: nowrap;
+    pointer-events: none;
+    animation: nudge 1.25s ease-in-out infinite;
+  }
+  .chat-nudge::after {
+    content: "→";
+    font-size: 24px;
+    line-height: 1;
+  }
+  @keyframes nudge {
+    0%, 100% { transform: translateX(0); opacity: .78; }
+    50% { transform: translateX(8px); opacity: 1; }
+  }
+  .chat-fab {
+    display: grid;
+    width: 64px;
+    height: 64px;
+    place-items: center;
+    border: 0;
+    border-radius: 50%;
+    color: #171006;
+    background: var(--yellow);
+    box-shadow: 0 18px 52px rgba(245, 173, 23, .34);
+    font-size: 28px;
+    font-weight: 950;
+    cursor: pointer;
+    transition: transform .16s ease, filter .16s ease;
+  }
+  .chat-fab:hover { transform: translateY(-2px) scale(1.03); filter: brightness(1.05); }
+  .chat-window {
+    position: absolute;
+    right: 0;
+    bottom: 76px;
+    width: min(420px, calc(100vw - 28px));
+    padding: 14px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: rgba(12, 22, 38, .96);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(18px);
+    transform-origin: 88% 100%;
+    transition: transform .16s ease, opacity .16s ease, visibility .16s ease;
+  }
+  .chat-widget:not(.open) .chat-window {
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(12px) scale(.96);
+    pointer-events: none;
+  }
+  .chat-widget.open .chat-nudge { display: none; }
+  .chat-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .chat-head strong {
+    color: var(--ink);
+    font-size: 18px;
+  }
+  .chat-close {
+    display: grid;
+    width: 34px;
+    height: 34px;
+    place-items: center;
+    border: 1px solid rgba(255,255,255,.13);
+    border-radius: 8px;
+    color: var(--ink);
+    background: rgba(255,255,255,.045);
+    cursor: pointer;
+  }
+  #chat-list {
+    height: 330px;
+    overflow-y: auto;
+    padding: 12px;
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 8px;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.018)),
+      repeating-linear-gradient(0deg, transparent 0 38px, rgba(255,255,255,.025) 38px 39px);
+    font-size: 14px;
+  }
+  .chat-empty {
+    display: grid;
+    min-height: 100%;
+    place-items: center;
+    color: var(--muted);
     text-align: center;
+  }
+  .msg {
+    display: flex;
+    justify-content: flex-end;
+    margin: 8px 0;
+  }
+  .msg-inner { max-width: 88%; }
+  .msg .nick {
+    margin: 0 4px 3px 0;
+    color: var(--muted-2);
+    font-size: 11px;
+    text-align: right;
+  }
+  .msg .bubble {
+    padding: 9px 12px;
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 8px 8px 2px 8px;
+    color: #f8fbff;
+    background: linear-gradient(135deg, var(--blue-bright), #244a89);
+    word-break: break-word;
+    cursor: default;
+  }
+  .msg.filtered .bubble {
+    color: #201302;
+    background: linear-gradient(135deg, var(--yellow-2), var(--yellow));
+  }
+  .msg .flag {
+    display: block;
+    margin: 4px 4px 0 0;
+    color: var(--yellow-2);
+    font-size: 11px;
+    text-align: right;
+  }
+  .chat-row {
+    display: grid;
+    grid-template-columns: 1fr 46px;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .chat-row .primary { min-height: 44px; }
+
+  footer {
+    margin-top: 20px;
+    color: var(--muted-2);
+    font-size: 12px;
+    text-align: center;
+  }
+
+  @media (max-width: 720px) {
+    body { overflow-x: hidden; }
+    main { width: min(100% - 22px, 1040px); padding-top: 12px; padding-bottom: 92px; }
+    .topbar { align-items: flex-start; flex-direction: column; padding-bottom: 16px; }
+    .brand-title { font-size: 15px; }
+    h1, h2 { font-size: 24px; }
+    .panel-head { align-items: flex-start; flex-direction: column; }
+    .toolbar { justify-content: flex-start; width: 100%; }
+    .scanner-panel,
+    .tests-panel { padding: 14px; }
+    textarea { min-height: 250px; font-size: 15px; }
+    .scan-summary { align-items: flex-start; flex-direction: column; }
+    .scan-flow { grid-template-columns: 1fr; }
+    .flow-label { display: block; }
+    .flow-label span { display: block; }
+    .flow-label span + span { margin-top: 3px; }
+    .cmp-text { max-height: 280px; }
+    .download { width: fit-content; }
+    .chat-widget { right: 12px; bottom: 12px; }
+    .chat-fab { width: 58px; height: 58px; }
+    .chat-nudge {
+      right: 66px;
+      bottom: 15px;
+      max-width: calc(100vw - 96px);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-size: 12px;
+    }
+    .chat-window {
+      position: fixed;
+      inset: auto 10px 82px 10px;
+      width: auto;
+      max-height: calc(100vh - 102px);
+    }
+    #chat-list { height: min(360px, calc(100vh - 240px)); }
+    table { min-width: 660px; }
   }
 </style>
 </head>
 <body>
 <main>
-  <header class="hero">
-    <div class="hero-emoji">🧼</div>
-    <div>
-      <h1>МатФильтр <span class="thin">· стенд Doodle Obby</span></h1>
-      <p class="tagline">
-        Попробуй пронести мат мимо фильтра: пробелы, точки, цифры, латиница,
-        звёздочки, транслит. Фильтр видел всякое — но вдруг ты особенный.
-      </p>
+  <header class="topbar">
+    <div class="brand" aria-label="Eccentric Фильтр мата">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-title">
+        <span>Eccentric</span>
+        <span>Фильтр</span>
+        <span>мата</span>
+      </span>
     </div>
-    <div class="hero-badges">
-      <a class="download" href="ProfanityFilter-Unity.zip" download
-         title="C#-порт + словари + тесты. Распаковать в Assets/ — и готово.">
-        ⬇ Ассет для Unity <span class="dl-sub">.zip · готов к закидыванию в Assets</span>
-      </a>
-      <span class="badge"><b>RU · EN</b> подробно &nbsp;·&nbsp; DE ES TR JA базово</span>
-      <span class="badge">локально, без сервера &nbsp;·&nbsp; ~0.02 мс на сообщение</span>
-    </div>
+    <a class="download" href="ProfanityFilter-Unity.zip" download
+       title="C#-порт, словари и тесты. Распаковать в Assets.">Скачать Unity asset</a>
   </header>
 
-  <div class="grid">
-    <section class="card">
-      <h2><span class="h2-emoji">🔬</span> Проверка текста</h2>
-      <textarea id="live-input" rows="3"
-        placeholder="Вставь сюда что угодно: сообщение, чат-лог, поэму, хитрый обход…"></textarea>
-      <div class="chips" id="chips">
-        <span class="chips-label">Или ткни готовый пример:</span>
-        <button class="chip" data-text="б л я д ь">б л я д ь</button>
-        <button class="chip" data-text="cyka blyat">cyka blyat</button>
-        <button class="chip" data-text="пи3дец">пи3дец</button>
-        <button class="chip" data-text="бл*дь">бл*дь</button>
-        <button class="chip" data-text="иди нах">иди нах</button>
-        <button class="chip" data-text="3.14здец">3.14здец</button>
-        <button class="chip" data-text="ТЫ ЧЁ БЛИН">ТЫ ЧЁ БЛИН ✓чисто</button>
-        <button class="chip" data-text="застрахуй команду">застрахуй команду ✓чисто</button>
+  <section class="panel scanner-panel" aria-labelledby="scanner-title">
+    <div class="panel-head">
+      <div>
+        <p class="eyebrow">сканер</p>
+        <h1 id="scanner-title">Проверка текста</h1>
       </div>
-      <div id="live-result"></div>
-    </section>
-
-    <section class="card">
-      <h2><span class="h2-emoji">💬</span> Чат как в игре</h2>
-      <div id="chat-list"></div>
-      <div class="chat-row">
-        <input type="text" id="chat-input" placeholder="Сообщение в чат…" maxlength="200">
-        <button id="chat-send" class="primary">➤</button>
+      <div class="toolbar">
+        <button id="clear-input" class="secondary" type="button">Очистить</button>
       </div>
-      <p class="chat-hint">
-        Так сообщение увидят другие игроки. Фильтр работает в обе стороны —
-        мат не отрисуется, даже если у отправителя старый билд. Наведи на пузырь,
-        чтобы увидеть, что было написано на самом деле.
-      </p>
-    </section>
-  </div>
+    </div>
 
-  <section class="card">
-    <h2><span class="h2-emoji">🧪</span> Автотесты</h2>
+    <textarea id="live-input" rows="8" wrap="soft"
+      placeholder="Вставь чат-лог или отдельную фразу..."></textarea>
+
+    <div class="chips" id="chips">
+      <span class="chips-label">готовые атаки</span>
+      <button class="chip" data-text="б л я д ь">б л я д ь</button>
+      <button class="chip" data-text="cyka blyat">cyka blyat</button>
+      <button class="chip" data-text="пи3дец">пи3дец</button>
+      <button class="chip" data-text="бл*дь">бл*дь</button>
+      <button class="chip" data-text="иди нах">иди нах</button>
+      <button class="chip" data-text="3.14здец">3.14здец</button>
+      <button class="chip" data-text="ТЫ ЧЁ БЛИН">ТЫ ЧЁ БЛИН · чисто</button>
+      <button class="chip" data-text="застрахуй команду">застрахуй команду · чисто</button>
+    </div>
+
+    <div id="live-result"></div>
+  </section>
+
+  <section class="panel tests-panel" aria-labelledby="tests-title">
+    <div class="panel-head">
+      <div>
+        <p class="eyebrow">корпус</p>
+        <h2 id="tests-title">Автотесты обходов</h2>
+      </div>
+    </div>
     <div class="tests-controls">
       <button id="tests-run" class="primary">Прогнать тесты</button>
       <label><input type="checkbox" id="tests-show-all"> показать все кейсы</label>
-      <span class="muted" style="font-size:13px">мат + обходы + чистые фразы, на которых фильтр уже обжигался</span>
     </div>
     <div id="tests-summary"></div>
-    <table id="tests-table">
-      <thead>
-        <tr><th></th><th>Сообщение</th><th>Ожидали</th><th>Получили</th><th>На экране</th></tr>
-      </thead>
-      <tbody id="tests-table-body"></tbody>
-    </table>
+    <div class="table-wrap">
+      <table id="tests-table">
+        <thead>
+          <tr><th></th><th>Сообщение</th><th>Ожидали</th><th>Получили</th><th>На экране</th></tr>
+        </thead>
+        <tbody id="tests-table-body"></tbody>
+      </table>
+    </div>
   </section>
 
   <footer>
-    Нашёл обход или ложное срабатывание — кидай в чат команды 🧤
-    Словари: <code>js/data-ru.js</code>, <code>js/data-en.js</code> (+ de/es/tr/ja) · логика: <code>js/filter.js</code> · дальше — порт в Unity C#
+    Словари: <code>js/data-ru.js</code>, <code>js/data-en.js</code> и остальные языки. Логика фильтра: <code>js/filter.js</code>.
   </footer>
 </main>
 
-<script src="js/data-ru.js?v=4"></script>
-<script src="js/data-en.js?v=4"></script>
-<script src="js/data-de.js?v=4"></script>
-<script src="js/data-es.js?v=4"></script>
-<script src="js/data-tr.js?v=4"></script>
-<script src="js/data-ja.js?v=4"></script>
-<script src="js/filter.js?v=4"></script>
-<script src="js/tests.js?v=4"></script>
-<script src="js/stress-corpus.js?v=4"></script>
-<script src="js/app.js?v=4"></script>
+<section id="chat-widget" class="chat-widget" aria-label="Чат как в игре">
+  <div class="chat-nudge">матерись тут</div>
+  <div class="chat-window" role="dialog" aria-label="Чат как в игре">
+    <div class="chat-head">
+      <strong>Чат как в игре</strong>
+      <button id="chat-close" class="chat-close" type="button" aria-label="Закрыть чат">×</button>
+    </div>
+    <div id="chat-list"></div>
+    <div class="chat-row">
+      <input type="text" id="chat-input" placeholder="Сообщение в чат..." maxlength="200">
+      <button id="chat-send" class="primary" title="Отправить">↵</button>
+    </div>
+  </div>
+  <button id="chat-toggle" class="chat-fab" type="button" aria-label="Открыть чат">#</button>
+</section>
+
+<script src="js/data-ru.js?v=6"></script>
+<script src="js/data-en.js?v=6"></script>
+<script src="js/data-de.js?v=6"></script>
+<script src="js/data-es.js?v=6"></script>
+<script src="js/data-tr.js?v=6"></script>
+<script src="js/data-ja.js?v=6"></script>
+<script src="js/filter.js?v=6"></script>
+<script src="js/tests.js?v=6"></script>
+<script src="js/stress-corpus.js?v=6"></script>
+<script src="js/app.js?v=6"></script>
 </body>
 </html>
