@@ -7238,6 +7238,12 @@ function _waitFor(check, timeout) {
 setTimeout(() => {
     if ('GamePushUnity' in window) return;
 
+    // Режим без SDK (Level Editor): шаблон выставляет __GS_BOOT_CFG__.disabled = true,
+    // чтобы вообще не инжектить gamepush.js с eponesh.com. Без этого SDK грузится и
+    // делает сетевой хендшейк, на котором BootLoader висит ~10с. Прод-шаблоны
+    // (GamePush/Poki) задают только sdkSrc, поэтому их это не трогает.
+    if (window.__GS_BOOT_CFG__ && window.__GS_BOOT_CFG__.disabled) return;
+
     window.onGPError = async () => {
         await _unityInnerAwaiter.ready;
         SendMessage('GamePushSDK', 'CallOnSDKError');

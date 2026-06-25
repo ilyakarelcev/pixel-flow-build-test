@@ -5,8 +5,13 @@
   <meta charset="utf-8">
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
   <title>Unity Web Player | Slime Flow</title>
-  <link rel="shortcut icon" href="TemplateData/favicon.ico">
   <link rel="stylesheet" href="TemplateData/style.css">
+
+  <script>
+    // Режим редактора уровней — без SDK площадки: запрещаем _gpInit.jspre грузить
+    // GamePush с eponesh.com (иначе сетевой хендшейк держит загрузку ~10с).
+    window.__GS_BOOT_CFG__ = { disabled: true };
+  </script>
 
   <style>
     :root {
