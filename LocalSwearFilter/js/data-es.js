@@ -34,7 +34,8 @@ var FILTER_DATA_ES = {
 
   "whitelist": [
     "comput", "disput", "reput",
-    "input", "output"
+    "input", "output",
+    "puton"
   ]
 };
 
