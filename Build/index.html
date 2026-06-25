@@ -5,7 +5,7 @@
   <meta charset="utf-8">
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
   <title>Unity Web Player | Slime Flow</title>
-  <link rel="stylesheet" href="TemplateData/style.css">
+  <link rel="icon" href="data:,">
 
   <script>
     // Режим редактора уровней — без SDK площадки: запрещаем _gpInit.jspre грузить
@@ -156,11 +156,7 @@
     }
 
     #unity-logo {
-      width: 154px;
-      height: 54px;
-      background: url('TemplateData/unity-logo-dark.png') no-repeat center;
-      background-size: contain;
-      filter: drop-shadow(0 0 10px rgba(255,255,255,0.2));
+      display: none;
     }
 
     #unity-progress-bar-empty {
@@ -170,6 +166,16 @@
       border-radius: 9px;
       overflow: hidden;
       border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    /* Заполнение шкалы — раньше его стилей не было (жили в отсутствующем
+       TemplateData/style.css), поэтому полоса выглядела пустой. */
+    #unity-progress-bar-full {
+      width: 0%;
+      height: 100%;
+      background: var(--accent-color);
+      border-radius: 9px;
+      transition: width 0.2s ease;
     }
 
 
