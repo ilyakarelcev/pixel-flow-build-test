@@ -1,4 +1,4 @@
-import { auth, provider, db, signInWithPopup, signOut, collection, doc, setDoc, getDocs, deleteDoc, query, orderBy } from './firebase.js';
+import { auth, provider, db, signInWithPopup, signOut, collection, collectionGroup, doc, setDoc, getDocs, deleteDoc, query, orderBy } from './firebase.js';
 
 // --- STATE ---
 const state = {
@@ -135,6 +135,10 @@ const elements = {
     userName: document.getElementById('user-name'),
     userAvatar: document.getElementById('user-avatar'),
     loginHint: document.getElementById('login-hint'),
+    userViewerControl: document.getElementById('user-viewer-control'),
+    userImpersonateSelect: document.getElementById('user-impersonate-select'),
+    impersonationBanner: document.getElementById('impersonation-banner'),
+    impersonationUserLabel: document.getElementById('impersonation-user-label'),
     cursorFollower: document.getElementById('cursor-follower'),
     btnShowHelp: document.getElementById('btn-show-help'),
     btnCloseHelp: document.getElementById('btn-close-help'),
@@ -541,6 +545,7 @@ function bindEvents() {
     elements.btnLogin.addEventListener('click', doLogin);
     elements.btnLogout.addEventListener('click', doLogout);
     elements.btnSaveProject.addEventListener('click', saveCurrentProject);
+    elements.userImpersonateSelect.addEventListener('change', onImpersonateChange);
 
     elements.btnExpandJson.addEventListener('click', () => {
         elements.jsonOutput.classList.toggle('expanded');
@@ -2224,26 +2229,148 @@ function getContrastColor(hex) {
 
 // --- FIREBASE (Basic Mock / Hooks) ---
 let firebaseUser = null;
+// Impersonation: when set (and != own uid) we are VIEWING another user's levels read-only.
+let viewingUserId = null;
+let viewingUserName = null;
+
+// The uid whose levels are currently displayed (own uid unless impersonating).
+function effectiveUid() {
+    return viewingUserId || (firebaseUser ? firebaseUser.uid : null);
+}
+// True while looking at someone else's account.
+function isImpersonating() {
+    return !!(firebaseUser && viewingUserId && viewingUserId !== firebaseUser.uid);
+}
 
 function setupAuthListeners() {
     // Assuming auth state listener exported or simulated via firebase.js
     auth.onAuthStateChanged(user => {
         if (user) {
             firebaseUser = user;
+            viewingUserId = null;
+            viewingUserName = null;
             elements.btnLogin.classList.add('hidden');
             elements.userInfo.classList.remove('hidden');
             elements.userName.textContent = user.displayName;
             elements.userAvatar.src = user.photoURL || '';
             elements.loginHint.style.display = 'none';
+            elements.userViewerControl.classList.remove('hidden');
+            applyImpersonationUI();
+            populateUserDropdown();
             loadSaves();
         } else {
             firebaseUser = null;
+            viewingUserId = null;
+            viewingUserName = null;
             elements.btnLogin.classList.remove('hidden');
             elements.userInfo.classList.add('hidden');
             elements.loginHint.style.display = 'block';
+            elements.userViewerControl.classList.add('hidden');
+            applyImpersonationUI();
             clearSaves();
         }
     });
+}
+
+// Returns true if a level doc belongs to another game (e.g. the 2048 / swipe-merge
+// editor), which shares the same Firestore `users/{uid}/levels` collection. We can't
+// migrate other users' data (rules only allow writing to your own folder), so the
+// Slime Flow editor filters foreign levels out at read time instead.
+// Unknown/ambiguous docs are kept visible so we never hide a legit Slime Flow level.
+function isForeignGameLevel(data) {
+    if (data.projectType === 'swipe_merge_level') return true;
+    let j = null;
+    try { j = typeof data.json === 'string' ? JSON.parse(data.json) : data.json; } catch (e) { j = null; }
+    if (j && typeof j === 'object') {
+        // Definitely Slime Flow.
+        if ('GridSize' in j || 'WarehouseColumns' in j || 'Blocks' in j || 'Colors' in j) return false;
+        // Definitely another game (2048 / swipe-merge).
+        if ('board_cells' in j || 'spawn_zones' in j || 'moves_limit' in j || 'missions' in j) return true;
+    }
+    return false;
+}
+
+// Build the "view as another user" dropdown from all level docs across every user.
+async function populateUserDropdown() {
+    if (!firebaseUser) return;
+    const select = elements.userImpersonateSelect;
+    try {
+        const snapshot = await getDocs(collectionGroup(db, 'levels'));
+        // uid -> best display name we can find for that user
+        const users = new Map();
+        snapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            if (isForeignGameLevel(data)) return; // ignore other-game levels (e.g. 2048)
+            const uid = data.userId;
+            if (!uid) return;
+            // Keep the first non-empty display name we encounter for each user.
+            if (!users.get(uid)) {
+                users.set(uid, data.displayName || null);
+            }
+        });
+        // Always make sure our own account is present.
+        if (!users.has(firebaseUser.uid)) users.set(firebaseUser.uid, firebaseUser.displayName || null);
+
+        const prevValue = select.value;
+        select.innerHTML = '';
+
+        // Own account first.
+        const selfOpt = document.createElement('option');
+        selfOpt.value = '';
+        selfOpt.textContent = '👤 Мои уровни';
+        select.appendChild(selfOpt);
+
+        // Everyone else, sorted by label.
+        const others = [...users.entries()]
+            .filter(([uid]) => uid !== firebaseUser.uid)
+            .map(([uid, name]) => ({ uid, label: name || ('ID: ' + uid.slice(0, 8) + '…') }))
+            .sort((a, b) => a.label.localeCompare(b.label));
+
+        others.forEach(({ uid, label }) => {
+            const opt = document.createElement('option');
+            opt.value = uid;
+            opt.textContent = label;
+            select.appendChild(opt);
+        });
+
+        // Restore selection if still valid.
+        if (prevValue && [...select.options].some(o => o.value === prevValue)) {
+            select.value = prevValue;
+        }
+    } catch (err) {
+        console.error("Failed to load user list", err);
+        if (err.code === 'permission-denied') {
+            console.warn("Firestore rules block reading other users' levels. Relax read rules on users/{uid}/levels to enable viewing other accounts.");
+        }
+    }
+}
+
+function onImpersonateChange() {
+    const val = elements.userImpersonateSelect.value;
+    if (!val) {
+        viewingUserId = null;
+        viewingUserName = null;
+    } else {
+        viewingUserId = val;
+        const opt = elements.userImpersonateSelect.selectedOptions[0];
+        viewingUserName = opt ? opt.textContent : val;
+    }
+    applyImpersonationUI();
+    loadSaves();
+}
+
+// Toggle read-only visuals: hide the "Save Project" card and show the banner while impersonating.
+function applyImpersonationUI() {
+    const impersonating = isImpersonating();
+    if (elements.btnSaveProject) {
+        elements.btnSaveProject.classList.toggle('hidden', impersonating);
+    }
+    if (elements.impersonationBanner) {
+        elements.impersonationBanner.classList.toggle('hidden', !impersonating);
+        if (impersonating) {
+            elements.impersonationUserLabel.textContent = viewingUserName || viewingUserId;
+        }
+    }
 }
 
 function doLogin() {
@@ -2258,11 +2385,16 @@ async function saveCurrentProject() {
         alert("Please login first to save!");
         return;
     }
+    if (isImpersonating()) {
+        alert("Режим просмотра чужого аккаунта — сохранять нельзя.");
+        return;
+    }
 
     const snap = elements.canvas.toDataURL("image/webp", 0.3); // Lower quality to save space
     const projData = {
         userId: firebaseUser.uid,
         name: `Level ${new Date().toLocaleString()}`,
+        displayName: firebaseUser.displayName || null,
         timestamp: Date.now(),
         image: snap,
         json: buildJSONString()
@@ -2285,24 +2417,31 @@ async function saveCurrentProject() {
 
 async function loadSaves() {
     if (!firebaseUser) return;
+    const uid = effectiveUid();
+    if (!uid) return;
+    const readOnly = isImpersonating();
     try {
         // Remove old cards (keep Create New)
         const cards = elements.savesCarousel.querySelectorAll('.save-card:not(.create-new)');
         cards.forEach(c => c.remove());
 
-        const q = query(collection(db, `users/${firebaseUser.uid}/levels`), orderBy("timestamp", "desc"));
+        const q = query(collection(db, `users/${uid}/levels`), orderBy("timestamp", "desc"));
         const querySnapshot = await getDocs(q);
         querySnapshot.forEach((docSnap) => {
             const data = docSnap.data();
+            if (isForeignGameLevel(data)) return; // skip other-game levels sharing this collection
+
+            // When viewing someone else's account, only "Open" is available (no writes).
+            const editControls = readOnly ? '' : `
+                    <button class="btn secondary" style="background:#059669; border-color:#059669; color:#fff;" onclick="event.stopPropagation(); window.overwriteSave('${docSnap.id}')">Save</button>
+                    <button class="btn secondary" style="background:#ef4444; border-color:#ef4444; color:#fff;" onclick="event.stopPropagation(); window.delSave('${docSnap.id}')">Del</button>`;
 
             const card = document.createElement('div');
             card.className = 'save-card';
             card.innerHTML = `
                 <img class="save-img-preview" src="${data.image}" alt="Save Preview">
                 <div class="save-controls">
-                    <button class="btn primary" onclick="event.stopPropagation(); window.openJson('${btoa(encodeURIComponent(data.json))}')">Open</button>
-                    <button class="btn secondary" style="background:#059669; border-color:#059669; color:#fff;" onclick="event.stopPropagation(); window.overwriteSave('${docSnap.id}')">Save</button>
-                    <button class="btn secondary" style="background:#ef4444; border-color:#ef4444; color:#fff;" onclick="event.stopPropagation(); window.delSave('${docSnap.id}')">Del</button>
+                    <button class="btn primary" onclick="event.stopPropagation(); window.openJson('${btoa(encodeURIComponent(data.json))}')">Open</button>${editControls}
                 </div>
             `;
             elements.savesCarousel.appendChild(card);
@@ -2427,10 +2566,12 @@ function loadFromJsonString(jsonString) {
 
 window.overwriteSave = async function (id) {
     if (!firebaseUser) return;
+    if (isImpersonating()) return; // read-only when viewing another account
     if (confirm("Overwrite this save with current project?")) {
         const snap = elements.canvas.toDataURL("image/webp", 0.5);
         const projData = {
             userId: firebaseUser.uid,
+            displayName: firebaseUser.displayName || null,
             timestamp: Date.now(),
             image: snap,
             json: buildJSONString()
@@ -2447,6 +2588,7 @@ window.overwriteSave = async function (id) {
 
 window.delSave = async function (id) {
     if (!firebaseUser) return;
+    if (isImpersonating()) return; // read-only when viewing another account
     if (confirm("Delete this save?")) {
         try {
             await deleteDoc(doc(db, `users/${firebaseUser.uid}/levels`, id));
