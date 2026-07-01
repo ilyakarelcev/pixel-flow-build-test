@@ -923,7 +923,7 @@ async function saveCurrentProject() {
     };
 
     try {
-        const levelsCol = collection(db, `users/${firebaseUser.uid}/levels`);
+        const levelsCol = collection(db, `users/${firebaseUser.uid}/game4_levels`);
         const docRef = doc(levelsCol);
         await setDoc(docRef, projData);
         appState.activeLevelId = docRef.id;
@@ -1065,7 +1065,7 @@ async function loadSaves() {
         const cards = savesCarousel.querySelectorAll('.save-card:not(.create-new)');
         cards.forEach(c => c.remove());
 
-        const q = query(collection(db, `users/${firebaseUser.uid}/levels`));
+        const q = query(collection(db, `users/${firebaseUser.uid}/game4_levels`));
         const querySnapshot = await getDocs(q);
 
         // Sort client-side: by createdAt desc, fallback to timestamp for old docs
@@ -1173,10 +1173,10 @@ window.overwriteSave = async function (id) {
         projectType: "swipe_merge_level"
     };
     try {
-        await setDoc(doc(db, `users/${firebaseUser.uid}/levels`, id), projData, { merge: true });
+        await setDoc(doc(db, `users/${firebaseUser.uid}/game4_levels`, id), projData, { merge: true });
 
         // If this save is published, sync the published version too
-        const q = query(collection(db, `users/${firebaseUser.uid}/levels`), orderBy("timestamp", "desc"));
+        const q = query(collection(db, `users/${firebaseUser.uid}/game4_levels`), orderBy("timestamp", "desc"));
         const querySnapshot = await getDocs(q);
         let publishedId = null;
         querySnapshot.forEach((docSnap) => {
@@ -1206,7 +1206,7 @@ window.delSave = async function (id) {
 
     try {
         // Check if published, and delete publication too
-        const q = query(collection(db, `users/${firebaseUser.uid}/levels`), orderBy("timestamp", "desc"));
+        const q = query(collection(db, `users/${firebaseUser.uid}/game4_levels`), orderBy("timestamp", "desc"));
         const querySnapshot = await getDocs(q);
         let publishedId = null;
         querySnapshot.forEach((docSnap) => {
@@ -1218,7 +1218,7 @@ window.delSave = async function (id) {
             await deleteDoc(doc(db, "community_levels", publishedId));
         }
 
-        await deleteDoc(doc(db, `users/${firebaseUser.uid}/levels`, id));
+        await deleteDoc(doc(db, `users/${firebaseUser.uid}/game4_levels`, id));
         if (appState.activeLevelId === id) appState.activeLevelId = null;
         alert("Проект удален.");
         loadSaves();
@@ -1241,7 +1241,7 @@ async function publishLevel() {
     const jsonStr = generateJSONString();
 
     try {
-        const levelsCol = collection(db, `users/${firebaseUser.uid}/levels`);
+        const levelsCol = collection(db, `users/${firebaseUser.uid}/game4_levels`);
 
         if (!saveId) {
             // Create new save
@@ -1260,7 +1260,7 @@ async function publishLevel() {
             appState.activeLevelId = saveId;
         } else {
             // Overwrite existing save
-            await setDoc(doc(db, `users/${firebaseUser.uid}/levels`, saveId), {
+            await setDoc(doc(db, `users/${firebaseUser.uid}/game4_levels`, saveId), {
                 timestamp: Date.now(),
                 image: snap,
                 json: jsonStr,
@@ -1280,11 +1280,11 @@ async function publishLevel() {
 async function doPublish(saveId, snap, jsonStr) {
     // Read the save to check if it already has a publishedId
     const savesCarousel = document.getElementById('saves-carousel');
-    const saveDocRef = doc(db, `users/${firebaseUser.uid}/levels`, saveId);
+    const saveDocRef = doc(db, `users/${firebaseUser.uid}/game4_levels`, saveId);
 
     // Get existing publishedId from save data if available
     let publishedId = null;
-    const q = query(collection(db, `users/${firebaseUser.uid}/levels`), orderBy("timestamp", "desc"));
+    const q = query(collection(db, `users/${firebaseUser.uid}/game4_levels`), orderBy("timestamp", "desc"));
     const querySnapshot = await getDocs(q);
     querySnapshot.forEach((docSnap) => {
         if (docSnap.id === saveId) {
@@ -1328,7 +1328,7 @@ window.publishFromCard = async function (saveId) {
         const jsonStr = generateJSONString();
 
         // Update the save data first
-        await setDoc(doc(db, `users/${firebaseUser.uid}/levels`, saveId), {
+        await setDoc(doc(db, `users/${firebaseUser.uid}/game4_levels`, saveId), {
             timestamp: Date.now(),
             image: snap,
             json: jsonStr,
@@ -1350,7 +1350,7 @@ window.unpublishFromCard = async function (saveId, publishedId) {
         // Delete from community_levels
         await deleteDoc(doc(db, "community_levels", publishedId));
         // Remove publishedId from save
-        await setDoc(doc(db, `users/${firebaseUser.uid}/levels`, saveId), { publishedId: null }, { merge: true });
+        await setDoc(doc(db, `users/${firebaseUser.uid}/game4_levels`, saveId), { publishedId: null }, { merge: true });
         alert("Публикация отменена.");
         loadSaves();
     } catch (err) {
@@ -1377,7 +1377,7 @@ window.cleanupOldPublished = async function () {
 
     try {
         // 1. Get all user's saves and collect their publishedIds
-        const savesQ = query(collection(db, `users/${firebaseUser.uid}/levels`));
+        const savesQ = query(collection(db, `users/${firebaseUser.uid}/game4_levels`));
         const savesSnap = await getDocs(savesQ);
         const linkedIds = new Set();
         savesSnap.forEach(d => {
