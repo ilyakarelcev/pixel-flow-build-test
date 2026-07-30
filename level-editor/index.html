@@ -197,6 +197,16 @@
                         <div class="section-header">
                             <h2>Projects</h2>
                             <div class="hint" id="login-hint">Log in to view cloud saves.</div>
+                            <div id="user-viewer-control" class="hidden" style="display: flex; align-items: center; gap: 6px; margin-left: auto;">
+                                <i class="material-icons" style="font-size: 18px; color: var(--text-color-muted, #9aa4b2);" title="Смотреть уровни другого пользователя">visibility</i>
+                                <select id="user-impersonate-select" title="Смотреть уровни другого пользователя" style="background: rgba(0,0,0,0.25); color: var(--text-color, #fff); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 6px 8px; font-size: 0.85rem; max-width: 240px;">
+                                    <option value="">👤 Мои уровни</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="impersonation-banner" class="hidden" style="display: flex; align-items: center; gap: 8px; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.5); color: #f59e0b; border-radius: 8px; padding: 8px 12px; margin-bottom: 10px; font-size: 0.85rem; font-weight: 500;">
+                            <i class="material-icons" style="font-size: 18px;">visibility</i>
+                            <span>Просмотр от лица: <b id="impersonation-user-label">—</b> · только чтение</span>
                         </div>
                         <div class="saves-carousel" id="saves-carousel">
                             <!-- Create New Card luôn luôn có -->
